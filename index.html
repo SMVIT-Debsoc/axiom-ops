@@ -102,6 +102,22 @@
     input[type="range"] {
       accent-color: #B9F5D8;
     }
+    button, select, input {
+      touch-action: manipulation;
+    }
+    .touch-pan-x {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .touch-pan-x::-webkit-scrollbar {
+      display: none;
+    }
+    @media (max-width: 640px) {
+      .tab-btn {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+      }
+    }
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -119,59 +135,59 @@
 
   <!-- TOP COMMAND BAR -->
   <header class="sticky top-0 z-30 bg-obsidian border-b border-olive">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6">
-      <div class="flex items-center justify-between h-14 gap-3">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6">
+      <div class="flex items-center justify-between h-14 gap-2 sm:gap-3">
         <!-- Brand & Global Health Pill -->
-        <div class="flex items-center gap-3 min-w-0">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
           <div class="flex items-center gap-2 shrink-0">
-            <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-mint text-obsidian font-display-num text-xl leading-none">A4</span>
-            <div class="leading-tight">
-              <div class="font-display-num text-xl tracking-wider text-alabaster">AXIOM 4.0 <span class="text-mint">// OPS</span></div>
+            <span class="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded bg-mint text-obsidian font-display-num text-lg sm:text-xl leading-none">A4</span>
+            <div class="leading-tight min-w-0">
+              <div class="font-display-num text-base sm:text-xl tracking-wider text-alabaster truncate">AXIOM 4.0 <span class="text-mint">// OPS</span></div>
               <div class="text-[10px] font-mono text-moss uppercase tracking-widest hidden sm:block">Frontend + Backend Traffic Control</div>
             </div>
           </div>
-          <div id="global-status-pill" class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-olive bg-carbon text-mint">
+          <div id="global-status-pill" class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-olive bg-carbon text-mint shrink-0">
             <span id="global-status-dot" class="w-2 h-2 rounded-full bg-mint pulse-dot"></span>
             <span id="global-status-text">ALL SYSTEMS NOMINAL</span>
           </div>
         </div>
 
         <!-- Right Controls -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <label for="scenario-select" class="sr-only">Traffic Scenario</label>
-          <select id="scenario-select" class="bg-carbon border border-olive text-alabaster text-xs font-mono rounded px-2.5 py-1.5 focus:outline-none focus:border-mint max-w-[165px] sm:max-w-none">
-            <option value="normal">Normal Traffic</option>
-            <option value="checkin">Check-In Rush (150 Users)</option>
-            <option value="draw">Draw Publish Spike</option>
-            <option value="coldstart">Render Cold Start</option>
-            <option value="dbpressure">NeonDB Pool Pressure</option>
+          <select id="scenario-select" class="bg-carbon border border-olive text-alabaster text-[11px] sm:text-xs font-mono rounded px-1.5 sm:px-2.5 py-1.5 focus:outline-none focus:border-mint max-w-[100px] xs:max-w-[130px] sm:max-w-none">
+            <option value="normal">Normal</option>
+            <option value="checkin">Check-In</option>
+            <option value="draw">Draw Spike</option>
+            <option value="coldstart">Cold Start</option>
+            <option value="dbpressure">DB Pressure</option>
           </select>
 
-          <button id="btn-live-toggle" type="button" class="btn-outline px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5" title="Toggle live 2s telemetry stream">
+          <button id="btn-live-toggle" type="button" class="btn-outline px-2 sm:px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5" title="Toggle live telemetry stream">
             <span id="live-dot" class="w-2 h-2 rounded-full bg-mint pulse-dot"></span>
             <span id="live-label" class="hidden sm:inline">LIVE</span>
           </button>
 
-          <button id="btn-probe-now" type="button" class="btn-mint px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1.5">
+          <button id="btn-probe-now" type="button" class="btn-mint px-2 sm:px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1" title="Probe endpoints">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             <span class="hidden sm:inline">Probe</span>
           </button>
 
-          <button id="btn-open-io" type="button" class="btn-outline px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5" title="Connect Live Backend, Import/Export & Integration Code">
+          <button id="btn-open-io" type="button" class="btn-outline px-2 sm:px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5" title="Connect Live Backend, Import/Export & Integration Code">
             <span id="conn-mode-dot" class="w-2 h-2 rounded-full bg-amberWarn"></span>
             <span id="conn-mode-label" class="hidden md:inline">Connect / IO</span>
-            <span class="md:hidden">IO</span>
+            <span id="conn-mode-label-mobile" class="md:hidden text-[11px]">IO</span>
           </button>
         </div>
       </div>
 
       <!-- Navigation Tabs -->
-      <nav class="flex items-center gap-5 overflow-x-auto no-scrollbar -mb-px" aria-label="Dashboard Views">
-        <button type="button" data-tab="overview" class="tab-btn active py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Overview</button>
-        <button type="button" data-tab="frontend" class="tab-btn py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Frontend <span class="text-[10px] font-mono text-moss ml-1">Vercel</span></button>
-        <button type="button" data-tab="backend" class="tab-btn py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Backend <span class="text-[10px] font-mono text-moss ml-1">Render + Neon</span></button>
-        <button type="button" data-tab="traffic" class="tab-btn py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Traffic Control</button>
-        <button type="button" data-tab="logs" class="tab-btn py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+      <nav class="flex items-center gap-3 sm:gap-5 overflow-x-auto no-scrollbar -mb-px touch-pan-x" aria-label="Dashboard Views">
+        <button type="button" data-tab="overview" class="tab-btn active py-2 sm:py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Overview</button>
+        <button type="button" data-tab="frontend" class="tab-btn py-2 sm:py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Frontend <span class="text-[10px] font-mono text-moss ml-0.5 sm:ml-1">Vercel</span></button>
+        <button type="button" data-tab="backend" class="tab-btn py-2 sm:py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Backend <span class="text-[10px] font-mono text-moss ml-0.5 sm:ml-1">Render + Neon</span></button>
+        <button type="button" data-tab="traffic" class="tab-btn py-2 sm:py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Traffic Control</button>
+        <button type="button" data-tab="logs" class="tab-btn py-2 sm:py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
           Alerts & Logs
           <span id="nav-alert-badge" class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-elevated text-mint border border-olive">0</span>
         </button>
@@ -196,53 +212,53 @@
     <!-- ==================== VIEW 1: OVERVIEW ==================== -->
     <section id="view-overview" class="space-y-5">
       <!-- Top KPI Strip -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div class="panel p-4">
-          <div class="flex items-center justify-between text-xs font-mono text-mutedMint uppercase">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div class="panel p-3 sm:p-4">
+          <div class="flex items-center justify-between text-[11px] sm:text-xs font-mono text-mutedMint uppercase">
             <span>Active Visitors</span>
-            <span class="text-mint">www.axiom4.online</span>
+            <span class="text-mint hidden xs:inline">www.axiom4.online</span>
           </div>
           <div class="mt-2 flex items-baseline justify-between">
-            <span id="kpi-visitors" class="font-display-num text-4xl text-alabaster">118</span>
+            <span id="kpi-visitors" class="font-display-num text-3xl sm:text-4xl text-alabaster">118</span>
             <span id="kpi-visitors-delta" class="text-xs font-mono text-mint">+6%</span>
           </div>
-          <div class="mt-2 text-[11px] text-moss font-mono" id="kpi-visitors-sub">Edge RPS: 24.2 / s</div>
+          <div class="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-moss font-mono" id="kpi-visitors-sub">Edge RPS: 24.2 / s</div>
         </div>
 
-        <div class="panel p-4">
-          <div class="flex items-center justify-between text-xs font-mono text-mutedMint uppercase">
+        <div class="panel p-3 sm:p-4">
+          <div class="flex items-center justify-between text-[11px] sm:text-xs font-mono text-mutedMint uppercase">
             <span>Backend API RPM</span>
-            <span class="text-mint">Render</span>
+            <span class="text-mint hidden xs:inline">Render</span>
           </div>
           <div class="mt-2 flex items-baseline justify-between">
-            <span id="kpi-rpm" class="font-display-num text-4xl text-alabaster">420</span>
+            <span id="kpi-rpm" class="font-display-num text-3xl sm:text-4xl text-alabaster">420</span>
             <span id="kpi-err-rate" class="text-xs font-mono text-mint">0.12% err</span>
           </div>
-          <div class="mt-2 text-[11px] text-moss font-mono" id="kpi-rpm-sub">Throttled (429): 0 / min</div>
+          <div class="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-moss font-mono" id="kpi-rpm-sub">Throttled (429): 0 / min</div>
         </div>
 
-        <div class="panel p-4">
-          <div class="flex items-center justify-between text-xs font-mono text-mutedMint uppercase">
+        <div class="panel p-3 sm:p-4">
+          <div class="flex items-center justify-between text-[11px] sm:text-xs font-mono text-mutedMint uppercase">
             <span>API p95 Latency</span>
-            <span class="text-mint">/api/*</span>
+            <span class="text-mint hidden xs:inline">/api/*</span>
           </div>
           <div class="mt-2 flex items-baseline justify-between">
-            <span id="kpi-p95" class="font-display-num text-4xl text-alabaster">142<span class="text-xl text-mutedMint ml-0.5">ms</span></span>
-            <span id="kpi-p95-badge" class="text-xs font-mono px-1.5 py-0.5 rounded bg-obsidian border border-olive text-mint">HEALTHY</span>
+            <span id="kpi-p95" class="font-display-num text-3xl sm:text-4xl text-alabaster">142<span class="text-lg sm:text-xl text-mutedMint ml-0.5">ms</span></span>
+            <span id="kpi-p95-badge" class="text-[10px] sm:text-xs font-mono px-1.5 py-0.5 rounded bg-obsidian border border-olive text-mint">HEALTHY</span>
           </div>
-          <div class="mt-2 text-[11px] text-moss font-mono" id="kpi-db-sub">NeonDB Pool: 6 / 20</div>
+          <div class="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-moss font-mono" id="kpi-db-sub">NeonDB Pool: 6 / 20</div>
         </div>
 
-        <div class="panel p-4">
-          <div class="flex items-center justify-between text-xs font-mono text-mutedMint uppercase">
+        <div class="panel p-3 sm:p-4">
+          <div class="flex items-center justify-between text-[11px] sm:text-xs font-mono text-mutedMint uppercase">
             <span>Socket.IO Live</span>
-            <span class="text-mint">WS / Poll</span>
+            <span class="text-mint hidden xs:inline">WS / Poll</span>
           </div>
           <div class="mt-2 flex items-baseline justify-between">
-            <span id="kpi-sockets" class="font-display-num text-4xl text-alabaster">94</span>
+            <span id="kpi-sockets" class="font-display-num text-3xl sm:text-4xl text-alabaster">94</span>
             <span id="kpi-ws-ratio" class="text-xs font-mono text-mint">92% WS</span>
           </div>
-          <div class="mt-2 text-[11px] text-moss font-mono" id="kpi-cache-sub">Client Cache Hit: 68%</div>
+          <div class="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-moss font-mono" id="kpi-cache-sub">Client Cache Hit: 68%</div>
         </div>
       </div>
 
@@ -575,18 +591,18 @@
   </main>
 
   <!-- CONNECT / IMPORT-EXPORT MODAL -->
-  <div id="io-modal" class="hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="panel max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 space-y-4">
+  <div id="io-modal" class="hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 sm:p-4">
+    <div class="panel max-w-2xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-5 space-y-4">
       <div class="flex items-center justify-between border-b border-olive pb-3">
         <div>
-          <h3 class="font-display-num text-2xl tracking-wider text-alabaster">TELEMETRY IO & PRODUCTION WIRING</h3>
+          <h3 class="font-display-num text-xl sm:text-2xl tracking-wider text-alabaster">TELEMETRY IO & PRODUCTION WIRING</h3>
           <p class="text-xs text-mutedMint">Import/export snapshots or copy drop-in Express + React hooks for Axiom26</p>
         </div>
         <button id="btn-close-io" type="button" class="btn-outline px-2.5 py-1 rounded text-xs font-mono">ESC</button>
       </div>
 
       <!-- Live Production Connection (ops.axiom4.online -> Render) -->
-      <div class="panel-inset p-3.5 space-y-3 border-mint/40">
+      <div class="panel-inset p-3 sm:p-3.5 space-y-3 border-mint/40">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div class="text-xs font-mono text-mint uppercase font-semibold">Live Production Stream (Render + Vercel Beacon)</div>
@@ -610,12 +626,20 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
           <div class="sm:col-span-2">
-            <label for="input-admin-secret" class="block text-[10px] font-mono text-moss uppercase mb-1">Admin Secret (x-admin-secret)</label>
-            <input id="input-admin-secret" type="password" placeholder="Enter ADMIN_SECRET_KEY from Render" class="w-full bg-carbon border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster focus:outline-none focus:border-mint" />
+            <div class="flex items-center justify-between mb-1">
+              <label for="input-admin-secret" class="block text-[10px] font-mono text-moss uppercase">Admin Secret (x-admin-secret)</label>
+              <span id="saved-key-indicator" class="hidden text-[10px] font-mono text-mint">✓ Saved on device</span>
+            </div>
+            <div class="relative">
+              <input id="input-admin-secret" type="password" placeholder="Enter ADMIN_SECRET_KEY from Render" class="w-full bg-carbon border border-olive rounded px-2.5 py-1.5 pr-8 text-xs font-mono text-alabaster focus:outline-none focus:border-mint" />
+              <button type="button" id="btn-toggle-secret-visibility" class="absolute right-2 top-1/2 -translate-y-1/2 text-moss hover:text-mint p-1 text-xs" title="Toggle password visibility">
+                👁
+              </button>
+            </div>
           </div>
-          <div class="flex gap-2">
-            <button id="btn-connect-live" type="button" class="btn-mint flex-1 px-3 py-1.5 rounded text-xs font-mono">Connect Live</button>
-            <button id="btn-disconnect-live" type="button" class="hidden btn-outline flex-1 px-3 py-1.5 rounded text-xs font-mono text-roseSoft border-roseSoft/60">Disconnect</button>
+          <div class="flex gap-2 w-full">
+            <button id="btn-connect-live" type="button" class="btn-mint flex-1 px-3 py-2 rounded text-xs font-mono font-medium">Connect Live</button>
+            <button id="btn-disconnect-live" type="button" class="hidden btn-outline flex-1 px-3 py-2 rounded text-xs font-mono text-roseSoft border-roseSoft/60 font-medium">Disconnect</button>
           </div>
         </div>
         <div id="live-conn-error" class="hidden text-[11px] font-mono text-roseSoft bg-crimson/20 border border-roseSoft/40 rounded px-2.5 py-1.5"></div>
@@ -1695,13 +1719,16 @@ if (typeof PerformanceObserver !== "undefined") {
       function updateConnUi() {
         const dot = document.getElementById('conn-mode-dot');
         const lbl = document.getElementById('conn-mode-label');
+        const lblMob = document.getElementById('conn-mode-label-mobile');
         const badge = document.getElementById('live-conn-status');
         const btnConn = document.getElementById('btn-connect-live');
         const btnDisc = document.getElementById('btn-disconnect-live');
         const scenSel = document.getElementById('scenario-select');
+        const keyIndicator = document.getElementById('saved-key-indicator');
         if (state.mode === 'live') {
           if (dot) dot.className = 'w-2 h-2 rounded-full bg-mint pulse-dot';
           if (lbl) lbl.textContent = 'LIVE API';
+          if (lblMob) lblMob.textContent = 'LIVE';
           if (badge) {
             badge.textContent = 'CONNECTED LIVE';
             badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-mint text-mint bg-carbon';
@@ -1709,9 +1736,11 @@ if (typeof PerformanceObserver !== "undefined") {
           if (btnConn) btnConn.classList.add('hidden');
           if (btnDisc) btnDisc.classList.remove('hidden');
           if (scenSel) scenSel.disabled = true;
+          if (keyIndicator) keyIndicator.classList.remove('hidden');
         } else {
           if (dot) dot.className = 'w-2 h-2 rounded-full bg-amberWarn';
           if (lbl) lbl.textContent = 'Connect / IO';
+          if (lblMob) lblMob.textContent = 'IO';
           if (badge) {
             badge.textContent = 'SIMULATION MODE';
             badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-olive text-amberWarn bg-carbon';
@@ -1869,6 +1898,21 @@ if (typeof PerformanceObserver !== "undefined") {
         }
       }
 
+      // Toggle password visibility on admin secret input
+      const btnToggleSecret = document.getElementById('btn-toggle-secret-visibility');
+      if (btnToggleSecret) {
+        btnToggleSecret.addEventListener('click', () => {
+          const inp = document.getElementById('input-admin-secret');
+          if (inp.type === 'password') {
+            inp.type = 'text';
+            btnToggleSecret.textContent = '🙈';
+          } else {
+            inp.type = 'password';
+            btnToggleSecret.textContent = '👁';
+          }
+        });
+      }
+
       document.getElementById('btn-connect-live').addEventListener('click', async () => {
         const url = document.getElementById('input-live-url').value.trim();
         const secret = document.getElementById('input-admin-secret').value.trim();
@@ -1881,6 +1925,9 @@ if (typeof PerformanceObserver !== "undefined") {
         state.liveConfig.secret = secret;
         state.liveConfig.pollMs = pollMs;
         try {
+          localStorage.setItem('axiom_ops_url', url);
+          localStorage.setItem('axiom_ops_secret', secret);
+          localStorage.setItem('axiom_ops_poll', String(pollMs));
           sessionStorage.setItem('axiom_ops_url', url);
           sessionStorage.setItem('axiom_ops_secret', secret);
           sessionStorage.setItem('axiom_ops_poll', String(pollMs));
@@ -1899,7 +1946,12 @@ if (typeof PerformanceObserver !== "undefined") {
 
       document.getElementById('btn-disconnect-live').addEventListener('click', () => {
         state.mode = 'sim';
-        try { sessionStorage.removeItem('axiom_ops_secret'); } catch {}
+        try {
+          localStorage.removeItem('axiom_ops_secret');
+          sessionStorage.removeItem('axiom_ops_secret');
+        } catch {}
+        const keyIndicator = document.getElementById('saved-key-indicator');
+        if (keyIndicator) keyIndicator.classList.add('hidden');
         updateConnUi();
         startLoop();
         pushAudit('Disconnected from live backend; resumed simulation mode.');
@@ -1938,18 +1990,24 @@ if (typeof PerformanceObserver !== "undefined") {
       }
       startLoop();
 
-      // Auto-connect on reload when hosted on ops.axiom4.online with a saved session secret
+      // Auto-connect on reload with saved secret across any domain (ops.axiom4.online, vercel.app, localhost)
       try {
-        const savedUrl = sessionStorage.getItem('axiom_ops_url');
-        const savedSecret = sessionStorage.getItem('axiom_ops_secret');
-        const savedPoll = Number(sessionStorage.getItem('axiom_ops_poll')) || 3000;
-        if (savedUrl) document.getElementById('input-live-url').value = savedUrl;
-        if (savedSecret && window.location.hostname.includes('axiom4.online')) {
-          state.liveConfig.baseUrl = savedUrl || state.liveConfig.baseUrl;
-          state.liveConfig.secret = savedSecret;
+        const savedUrl = localStorage.getItem('axiom_ops_url') || sessionStorage.getItem('axiom_ops_url');
+        const savedSecret = localStorage.getItem('axiom_ops_secret') || sessionStorage.getItem('axiom_ops_secret');
+        const savedPoll = Number(localStorage.getItem('axiom_ops_poll') || sessionStorage.getItem('axiom_ops_poll')) || 3000;
+        if (savedUrl) {
+          document.getElementById('input-live-url').value = savedUrl;
+          state.liveConfig.baseUrl = savedUrl;
+        }
+        if (savedPoll) {
+          document.getElementById('select-poll-ms').value = String(savedPoll);
           state.liveConfig.pollMs = savedPoll;
+        }
+        if (savedSecret) {
+          state.liveConfig.secret = savedSecret;
           document.getElementById('input-admin-secret').value = savedSecret;
           state.mode = 'live';
+          state.live = true;
           updateConnUi();
           startLoop();
           fetchLiveTelemetry();
