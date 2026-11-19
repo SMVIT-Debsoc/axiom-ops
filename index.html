@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AXIOM 4.0 — Frontend & Backend Traffic & Health Operations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#141510',
+            carbon: '#1D1E18',
+            elevated: '#272922',
+            mint: '#B9F5D8',
+            mintPressed: '#9FE3C2',
+            alabaster: '#EAFBF5',
+            sage: '#D4EDE1',
+            mutedMint: '#BDD9CA',
+            olive: '#4A5646',
+            moss: '#6B8F71',
+            crimson: '#A51818',
+            roseSoft: '#FCA5A5',
+            amberWarn: '#F5C77E'
+          },
+          fontFamily: {
+            display: ['"Bebas Neue"', 'sans-serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      background-color: #141510;
+      color: #EAFBF5;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    .font-display-num {
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.04em;
+    }
+    .panel {
+      background-color: #1D1E18;
+      border: 1px solid #4A5646;
+      border-radius: 0.5rem;
+    }
+    .panel-inset {
+      background-color: #141510;
+      border: 1px solid #4A5646;
+      border-radius: 0.375rem;
+    }
+    .btn-mint {
+      background-color: #B9F5D8;
+      color: #141510;
+      font-weight: 600;
+      transition: background-color 150ms ease, transform 100ms ease;
+    }
+    .btn-mint:hover {
+      background-color: #9FE3C2;
+    }
+    .btn-mint:active {
+      transform: translateY(1px);
+    }
+    .btn-outline {
+      background-color: #1D1E18;
+      color: #EAFBF5;
+      border: 1px solid #4A5646;
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+    .btn-outline:hover {
+      background-color: #272922;
+      border-color: #6B8F71;
+    }
+    .tab-btn {
+      color: #BDD9CA;
+      border-bottom: 2px solid transparent;
+      transition: color 150ms ease, border-color 150ms ease;
+    }
+    .tab-btn:hover {
+      color: #EAFBF5;
+    }
+    .tab-btn.active {
+      color: #B9F5D8;
+      border-bottom-color: #B9F5D8;
+    }
+    .pulse-dot {
+      animation: pulseOp 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulseOp {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    input[type="range"] {
+      accent-color: #B9F5D8;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #141510;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4A5646;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP COMMAND BAR -->
+  <header class="sticky top-0 z-30 bg-obsidian border-b border-olive">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-14 gap-3">
+        <!-- Brand & Global Health Pill -->
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded bg-mint text-obsidian font-display-num text-xl leading-none">A4</span>
+            <div class="leading-tight">
+              <div class="font-display-num text-xl tracking-wider text-alabaster">AXIOM 4.0 <span class="text-mint">// OPS</span></div>
+              <div class="text-[10px] font-mono text-moss uppercase tracking-widest hidden sm:block">Frontend + Backend Traffic Control</div>
+            </div>
+          </div>
+          <div id="global-status-pill" class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-olive bg-carbon text-mint">
+            <span id="global-status-dot" class="w-2 h-2 rounded-full bg-mint pulse-dot"></span>
+            <span id="global-status-text">ALL SYSTEMS NOMINAL</span>
+          </div>
+        </div>
+
+        <!-- Right Controls -->
+        <div class="flex items-center gap-2">
+          <label for="scenario-select" class="sr-only">Traffic Scenario</label>
+          <select id="scenario-select" class="bg-carbon border border-olive text-alabaster text-xs font-mono rounded px-2.5 py-1.5 focus:outline-none focus:border-mint max-w-[165px] sm:max-w-none">
+            <option value="normal">Normal Traffic</option>
+            <option value="checkin">Check-In Rush (150 Users)</option>
+            <option value="draw">Draw Publish Spike</option>
+            <option value="coldstart">Render Cold Start</option>
+            <option value="dbpressure">NeonDB Pool Pressure</option>
+          </select>
+
+          <button id="btn-live-toggle" type="button" class="btn-outline px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5" title="Toggle live 2s telemetry stream">
+            <span id="live-dot" class="w-2 h-2 rounded-full bg-mint pulse-dot"></span>
+            <span id="live-label" class="hidden sm:inline">LIVE</span>
+          </button>
+
+          <button id="btn-probe-now" type="button" class="btn-mint px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span class="hidden sm:inline">Probe</span>
+          </button>
+
+          <button id="btn-open-io" type="button" class="btn-outline px-2.5 py-1.5 rounded text-xs font-mono flex items-center gap-1.5" title="Connect Live Backend, Import/Export & Integration Code">
+            <span id="conn-mode-dot" class="w-2 h-2 rounded-full bg-amberWarn"></span>
+            <span id="conn-mode-label" class="hidden md:inline">Connect / IO</span>
+            <span class="md:hidden">IO</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-5 overflow-x-auto no-scrollbar -mb-px" aria-label="Dashboard Views">
+        <button type="button" data-tab="overview" class="tab-btn active py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Overview</button>
+        <button type="button" data-tab="frontend" class="tab-btn py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Frontend <span class="text-[10px] font-mono text-moss ml-1">Vercel</span></button>
+        <button type="button" data-tab="backend" class="tab-btn py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Backend <span class="text-[10px] font-mono text-moss ml-1">Render + Neon</span></button>
+        <button type="button" data-tab="traffic" class="tab-btn py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap">Traffic Control</button>
+        <button type="button" data-tab="logs" class="tab-btn py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+          Alerts & Logs
+          <span id="nav-alert-badge" class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-elevated text-mint border border-olive">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ACTIVE MITIGATION / MAINTENANCE BANNER (Dynamic) -->
+  <div id="active-mitigation-bar" class="hidden bg-elevated border-b border-olive">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+      <div class="flex items-center gap-2 text-amberWarn">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        <span id="mitigation-summary">Active traffic controls enabled.</span>
+      </div>
+      <button id="btn-reset-controls" type="button" class="text-mint hover:underline">Reset All Controls</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+
+    <!-- ==================== VIEW 1: OVERVIEW ==================== -->
+    <section id="view-overview" class="space-y-5">
+      <!-- Top KPI Strip -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="panel p-4">
+          <div class="flex items-center justify-between text-xs font-mono text-mutedMint uppercase">
+            <span>Active Visitors</span>
+            <span class="text-mint">www.axiom4.online</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpi-visitors" class="font-display-num text-4xl text-alabaster">118</span>
+            <span id="kpi-visitors-delta" class="text-xs font-mono text-mint">+6%</span>
+          </div>
+          <div class="mt-2 text-[11px] text-moss font-mono" id="kpi-visitors-sub">Edge RPS: 24.2 / s</div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="flex items-center justify-between text-xs font-mono text-mutedMint uppercase">
+            <span>Backend API RPM</span>
+            <span class="text-mint">Render</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpi-rpm" class="font-display-num text-4xl text-alabaster">420</span>
+            <span id="kpi-err-rate" class="text-xs font-mono text-mint">0.12% err</span>
+          </div>
+          <div class="mt-2 text-[11px] text-moss font-mono" id="kpi-rpm-sub">Throttled (429): 0 / min</div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="flex items-center justify-between text-xs font-mono text-mutedMint uppercase">
+            <span>API p95 Latency</span>
+            <span class="text-mint">/api/*</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpi-p95" class="font-display-num text-4xl text-alabaster">142<span class="text-xl text-mutedMint ml-0.5">ms</span></span>
+            <span id="kpi-p95-badge" class="text-xs font-mono px-1.5 py-0.5 rounded bg-obsidian border border-olive text-mint">HEALTHY</span>
+          </div>
+          <div class="mt-2 text-[11px] text-moss font-mono" id="kpi-db-sub">NeonDB Pool: 6 / 20</div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="flex items-center justify-between text-xs font-mono text-mutedMint uppercase">
+            <span>Socket.IO Live</span>
+            <span class="text-mint">WS / Poll</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpi-sockets" class="font-display-num text-4xl text-alabaster">94</span>
+            <span id="kpi-ws-ratio" class="text-xs font-mono text-mint">92% WS</span>
+          </div>
+          <div class="mt-2 text-[11px] text-moss font-mono" id="kpi-cache-sub">Client Cache Hit: 68%</div>
+        </div>
+      </div>
+
+      <!-- Service Health Matrix (5 Layers) -->
+      <div class="panel p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">STACK HEALTH MATRIX</h2>
+            <p class="text-xs text-mutedMint">Real-time probe status across AXIOM 4.0 frontend, backend, database, realtime, and auth layers</p>
+          </div>
+          <div class="text-xs font-mono text-moss">Last probe: <span id="last-probe-time" class="text-sage">Just now</span></div>
+        </div>
+        <div id="service-health-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"></div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="panel p-4 lg:col-span-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 class="font-display-num text-xl tracking-wider text-alabaster">UNIFIED TRAFFIC STREAM</h2>
+              <p class="text-xs text-mutedMint">Frontend Edge Req/s vs Backend API Req/s vs Socket.IO Events/s</p>
+            </div>
+            <div class="flex items-center gap-3 text-[11px] font-mono">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-mint inline-block"></span>Frontend</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-amberWarn inline-block"></span>Backend API</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-moss inline-block"></span>Socket.IO</span>
+            </div>
+          </div>
+          <div class="relative h-64">
+            <canvas id="chart-overview-traffic"></canvas>
+          </div>
+        </div>
+
+        <div class="panel p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="font-display-num text-xl tracking-wider text-alabaster">QUICK TRAFFIC GUARD</h2>
+              <button type="button" data-jump="traffic" class="text-xs font-mono text-mint hover:underline">All Controls →</button>
+            </div>
+            <div class="space-y-3" id="quick-guards-list"></div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-olive flex items-center justify-between text-xs font-mono">
+            <span class="text-mutedMint">Tournament Window</span>
+            <span class="text-mint">Nov 21–28, 2026</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Alerts Preview -->
+      <div class="panel p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-display-num text-xl tracking-wider text-alabaster">ACTIVE INCIDENTS & ANOMALIES</h2>
+          <button type="button" data-jump="logs" class="text-xs font-mono text-mint hover:underline">View Full Log Stream →</button>
+        </div>
+        <div id="overview-alerts-list" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: FRONTEND (VERCEL) ==================== -->
+    <section id="view-frontend" class="hidden space-y-5">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="panel p-4">
+          <div class="text-xs font-mono text-mutedMint uppercase">Desktop Core Web Vitals</div>
+          <div class="mt-2 flex items-baseline gap-3">
+            <span id="fe-desktop-score" class="font-display-num text-4xl text-mint">100</span>
+            <span class="text-xs font-mono text-sage">Perf / SEO / Best Practices</span>
+          </div>
+          <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div class="panel-inset p-2">
+              <div class="text-[10px] font-mono text-moss">LCP</div>
+              <div id="fe-desk-lcp" class="text-sm font-mono font-semibold text-alabaster">0.4s</div>
+            </div>
+            <div class="panel-inset p-2">
+              <div class="text-[10px] font-mono text-moss">INP</div>
+              <div id="fe-desk-inp" class="text-sm font-mono font-semibold text-alabaster">42ms</div>
+            </div>
+            <div class="panel-inset p-2">
+              <div class="text-[10px] font-mono text-moss">CLS</div>
+              <div class="text-sm font-mono font-semibold text-alabaster">0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="text-xs font-mono text-mutedMint uppercase">Mobile Core Web Vitals</div>
+          <div class="mt-2 flex items-baseline gap-3">
+            <span id="fe-mobile-score" class="font-display-num text-4xl text-amberWarn">89</span>
+            <span class="text-xs font-mono text-sage">Hero: shiva-music-sm.webp</span>
+          </div>
+          <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div class="panel-inset p-2">
+              <div class="text-[10px] font-mono text-moss">LCP</div>
+              <div id="fe-mob-lcp" class="text-sm font-mono font-semibold text-amberWarn">3.4s</div>
+            </div>
+            <div class="panel-inset p-2">
+              <div class="text-[10px] font-mono text-moss">INP</div>
+              <div id="fe-mob-inp" class="text-sm font-mono font-semibold text-alabaster">118ms</div>
+            </div>
+            <div class="panel-inset p-2">
+              <div class="text-[10px] font-mono text-moss">CLS</div>
+              <div class="text-sm font-mono font-semibold text-alabaster">0.01</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="text-xs font-mono text-mutedMint uppercase">Client API Cache & Dedupe</div>
+          <div class="mt-2 flex items-baseline gap-3">
+            <span id="fe-cache-hit" class="font-display-num text-4xl text-mint">68%</span>
+            <span class="text-xs font-mono text-sage" id="fe-cache-ttl-label">TTL: 20s (api.js)</span>
+          </div>
+          <div class="mt-3 space-y-1.5 text-xs font-mono text-mutedMint">
+            <div class="flex justify-between"><span>inflightGets Dedupe:</span><span id="fe-dedupe-saved" class="text-alabaster">142 req/min saved</span></div>
+            <div class="flex justify-between"><span>Client JS Error Rate:</span><span id="fe-js-errors" class="text-mint">0.04%</span></div>
+            <div class="flex justify-between"><span>Clerk Auth Sync:</span><span id="fe-clerk-status" class="text-mint">99.9% OK</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="panel p-4">
+          <div class="mb-3">
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">TRAFFIC BY FRONTEND ROUTE</h2>
+            <p class="text-xs text-mutedMint">Active sessions & requests across React Router paths (Vercel Analytics)</p>
+          </div>
+          <div class="relative h-64">
+            <canvas id="chart-fe-routes"></canvas>
+          </div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="font-display-num text-xl tracking-wider text-alabaster">CLIENT ROUTE HEALTH</h2>
+              <p class="text-xs text-mutedMint">Bundle hydration, API dependency latency & error count</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead>
+                <tr class="border-b border-olive text-moss uppercase">
+                  <th class="py-2 pr-2">Route</th>
+                  <th class="py-2 px-2 text-right">Users</th>
+                  <th class="py-2 px-2 text-right">Load p95</th>
+                  <th class="py-2 pl-2 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody id="fe-routes-table" class="divide-y divide-olive/50"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: BACKEND (RENDER + NEONDB + SOCKET.IO) ==================== -->
+    <section id="view-backend" class="hidden space-y-5">
+      <!-- Resource Gauges -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="panel p-4">
+          <div class="flex justify-between text-xs font-mono text-mutedMint">
+            <span>RENDER CPU</span>
+            <span id="be-cpu-val" class="text-alabaster">34%</span>
+          </div>
+          <div class="w-full h-2 bg-obsidian rounded mt-2 overflow-hidden border border-olive">
+            <div id="be-cpu-bar" class="h-full bg-mint transition-all duration-500" style="width: 34%"></div>
+          </div>
+          <div class="mt-2 text-[11px] font-mono text-moss">Node 22 Alpine • Port 3000</div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="flex justify-between text-xs font-mono text-mutedMint">
+            <span>HEAP MEMORY</span>
+            <span id="be-mem-val" class="text-alabaster">218 / 512 MB</span>
+          </div>
+          <div class="w-full h-2 bg-obsidian rounded mt-2 overflow-hidden border border-olive">
+            <div id="be-mem-bar" class="h-full bg-mint transition-all duration-500" style="width: 42%"></div>
+          </div>
+          <div class="mt-2 text-[11px] font-mono text-moss" id="be-evloop">Event Loop Lag: 8ms</div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="flex justify-between text-xs font-mono text-mutedMint">
+            <span>NEONDB POOL (PRISMA)</span>
+            <span id="be-db-val" class="text-alabaster">6 / 20</span>
+          </div>
+          <div class="w-full h-2 bg-obsidian rounded mt-2 overflow-hidden border border-olive">
+            <div id="be-db-bar" class="h-full bg-mint transition-all duration-500" style="width: 30%"></div>
+          </div>
+          <div class="mt-2 text-[11px] font-mono text-moss" id="be-db-lat">Query p95: 24ms</div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="flex justify-between text-xs font-mono text-mutedMint">
+            <span>SOCKET.IO TRANSPORT</span>
+            <span id="be-ws-val" class="text-mint">92% WS / 8% Poll</span>
+          </div>
+          <div class="w-full h-2 bg-obsidian rounded mt-2 overflow-hidden border border-olive">
+            <div id="be-ws-bar" class="h-full bg-mint transition-all duration-500" style="width: 92%"></div>
+          </div>
+          <div class="mt-2 text-[11px] font-mono text-moss" id="be-rooms-val">Active Rooms: 14</div>
+        </div>
+      </div>
+
+      <!-- Endpoint Latency Chart + Socket Event Mix -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="panel p-4 lg:col-span-2">
+          <div class="mb-3">
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">API ENDPOINT LATENCY (p50 vs p95 ms)</h2>
+            <p class="text-xs text-mutedMint">Express routes from Axiom26 backend (Docker HEALTHCHECK + Prisma queries)</p>
+          </div>
+          <div class="relative h-64">
+            <canvas id="chart-be-latency"></canvas>
+          </div>
+        </div>
+
+        <div class="panel p-4">
+          <div class="mb-3">
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">SOCKET.IO EVENT MIX</h2>
+            <p class="text-xs text-mutedMint">Real-time tournament broadcasts/min</p>
+          </div>
+          <div class="relative h-64">
+            <canvas id="chart-be-sockets"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Endpoint Health Table -->
+      <div class="panel p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">EXPRESS API ENDPOINT TELEMETRY</h2>
+            <p class="text-xs text-mutedMint">Filter endpoints or apply targeted rate throttling per route</p>
+          </div>
+          <input id="endpoint-search" type="text" placeholder="Filter endpoint (e.g. pairing, checkin)..." class="bg-obsidian border border-olive rounded px-3 py-1.5 text-xs font-mono text-alabaster placeholder-moss focus:outline-none focus:border-mint w-full sm:w-64" />
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="border-b border-olive text-moss uppercase">
+                <th class="py-2 pr-3">Method & Route</th>
+                <th class="py-2 px-2 text-right">RPM</th>
+                <th class="py-2 px-2 text-right">p50</th>
+                <th class="py-2 px-2 text-right">p95</th>
+                <th class="py-2 px-2 text-right">Err %</th>
+                <th class="py-2 px-2 text-center">Status</th>
+                <th class="py-2 pl-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="be-endpoints-table" class="divide-y divide-olive/50"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: TRAFFIC CONTROL ==================== -->
+    <section id="view-traffic" class="hidden space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Rate Limiters -->
+        <div class="panel p-4 space-y-4">
+          <div>
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">API RATE LIMITERS (REQ / MIN / IP)</h2>
+            <p class="text-xs text-mutedMint">Tune burst thresholds to protect Render Express & NeonDB during round transitions</p>
+          </div>
+          <div id="rate-limit-controls" class="space-y-4"></div>
+        </div>
+
+        <!-- Circuit Breakers & Operational Switches -->
+        <div class="panel p-4 space-y-4">
+          <div>
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">CIRCUIT BREAKERS & LOAD SHEDDING</h2>
+            <p class="text-xs text-mutedMint">Toggle mitigations immediately; effects reflect live in telemetry & audit log</p>
+          </div>
+          <div id="circuit-breaker-controls" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- Ops Action Audit Log -->
+      <div class="panel p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">TRAFFIC CONTROL AUDIT TRAIL</h2>
+            <p class="text-xs text-mutedMint">Timestamped record of every rate-limit change, circuit breaker toggle, and manual probe</p>
+          </div>
+          <button id="btn-clear-audit" type="button" class="btn-outline px-2.5 py-1 rounded text-xs font-mono">Clear Trail</button>
+        </div>
+        <div id="audit-trail-list" class="space-y-1.5 max-h-60 overflow-y-auto font-mono text-xs"></div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 5: ALERTS & LOGS ==================== -->
+    <section id="view-logs" class="hidden space-y-5">
+      <div class="panel p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">ALERTS & INCIDENT QUEUE</h2>
+            <p class="text-xs text-mutedMint">Acknowledge or resolve anomalies triggered by latency, error spikes, or DB pool pressure</p>
+          </div>
+          <button id="btn-resolve-all-alerts" type="button" class="btn-outline px-3 py-1.5 rounded text-xs font-mono">Resolve All</button>
+        </div>
+        <div id="full-alerts-list" class="space-y-2"></div>
+      </div>
+
+      <div class="panel p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 class="font-display-num text-xl tracking-wider text-alabaster">LIVE TELEMETRY LOG STREAM</h2>
+            <p class="text-xs text-mutedMint">Filter unified logs across Frontend, Express API, Socket.IO, and NeonDB</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="log-layer-filter" class="bg-obsidian border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster focus:outline-none focus:border-mint">
+              <option value="all">All Layers</option>
+              <option value="FRONTEND">Frontend</option>
+              <option value="BACKEND">Backend API</option>
+              <option value="SOCKET">Socket.IO</option>
+              <option value="DATABASE">NeonDB</option>
+            </select>
+            <select id="log-level-filter" class="bg-obsidian border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster focus:outline-none focus:border-mint">
+              <option value="all">All Levels</option>
+              <option value="INFO">INFO</option>
+              <option value="WARN">WARN</option>
+              <option value="ERROR">ERROR</option>
+            </select>
+            <input id="log-search" type="text" placeholder="Search logs..." class="bg-obsidian border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster placeholder-moss focus:outline-none focus:border-mint w-44" />
+          </div>
+        </div>
+        <div id="log-stream-container" class="panel-inset p-3 max-h-80 overflow-y-auto font-mono text-[11px] space-y-1.5"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- CONNECT / IMPORT-EXPORT MODAL -->
+  <div id="io-modal" class="hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="panel max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-olive pb-3">
+        <div>
+          <h3 class="font-display-num text-2xl tracking-wider text-alabaster">TELEMETRY IO & PRODUCTION WIRING</h3>
+          <p class="text-xs text-mutedMint">Import/export snapshots or copy drop-in Express + React hooks for Axiom26</p>
+        </div>
+        <button id="btn-close-io" type="button" class="btn-outline px-2.5 py-1 rounded text-xs font-mono">ESC</button>
+      </div>
+
+      <!-- Live Production Connection (ops.axiom4.online -> Render) -->
+      <div class="panel-inset p-3.5 space-y-3 border-mint/40">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-mono text-mint uppercase font-semibold">Live Production Stream (Render + Vercel Beacon)</div>
+            <p class="text-[11px] text-mutedMint">Connect directly to your Axiom26 backend to stream real-time metrics and push live traffic controls.</p>
+          </div>
+          <span id="live-conn-status" class="px-2 py-0.5 rounded text-[10px] font-mono border border-olive text-amberWarn bg-carbon">SIMULATION MODE</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div class="sm:col-span-2">
+            <label for="input-live-url" class="block text-[10px] font-mono text-moss uppercase mb-1">Backend Base URL</label>
+            <input id="input-live-url" type="url" value="https://axiom26-aezg.onrender.com" placeholder="https://axiom26-aezg.onrender.com" class="w-full bg-carbon border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster focus:outline-none focus:border-mint" />
+          </div>
+          <div>
+            <label for="select-poll-ms" class="block text-[10px] font-mono text-moss uppercase mb-1">Poll Interval</label>
+            <select id="select-poll-ms" class="w-full bg-carbon border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster focus:outline-none focus:border-mint">
+              <option value="2000">2 seconds</option>
+              <option value="3000" selected>3 seconds</option>
+              <option value="5000">5 seconds</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
+          <div class="sm:col-span-2">
+            <label for="input-admin-secret" class="block text-[10px] font-mono text-moss uppercase mb-1">Admin Secret (x-admin-secret)</label>
+            <input id="input-admin-secret" type="password" placeholder="Enter ADMIN_SECRET_KEY from Render" class="w-full bg-carbon border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster focus:outline-none focus:border-mint" />
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-connect-live" type="button" class="btn-mint flex-1 px-3 py-1.5 rounded text-xs font-mono">Connect Live</button>
+            <button id="btn-disconnect-live" type="button" class="hidden btn-outline flex-1 px-3 py-1.5 rounded text-xs font-mono text-roseSoft border-roseSoft/60">Disconnect</button>
+          </div>
+        </div>
+        <div id="live-conn-error" class="hidden text-[11px] font-mono text-roseSoft bg-crimson/20 border border-roseSoft/40 rounded px-2.5 py-1.5"></div>
+      </div>
+
+      <!-- Import / Export Section -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="panel-inset p-3 space-y-2">
+          <div class="text-xs font-mono text-mint uppercase">Export Ops Snapshot</div>
+          <p class="text-xs text-mutedMint">Download current KPIs, endpoint latencies, rate limits, and active alerts.</p>
+          <div class="flex gap-2 pt-1">
+            <button id="btn-export-json" type="button" class="btn-mint px-3 py-1.5 rounded text-xs font-mono">Export JSON</button>
+            <button id="btn-export-csv" type="button" class="btn-outline px-3 py-1.5 rounded text-xs font-mono">Export CSV</button>
+          </div>
+        </div>
+        <div class="panel-inset p-3 space-y-2">
+          <div class="text-xs font-mono text-mint uppercase">Import Telemetry JSON</div>
+          <p class="text-xs text-mutedMint">Load a snapshot exported from your Render `/api/admin/ops-telemetry` endpoint.</p>
+          <input id="input-import-file" type="file" accept=".json" class="block w-full text-xs font-mono text-sage file:mr-2 file:py-1 file:px-2.5 file:rounded file:border file:border-olive file:bg-carbon file:text-mint hover:file:bg-elevated cursor-pointer" />
+        </div>
+      </div>
+
+      <!-- Drop-in Backend Telemetry Snippet -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-mono text-mint uppercase">1. Express Middleware (Axiom26 Backend — src/middleware/telemetry.ts)</span>
+          <button id="btn-copy-backend" type="button" class="btn-outline px-2.5 py-1 rounded text-[11px] font-mono">Copy Code</button>
+        </div>
+        <pre id="code-backend-snippet" class="panel-inset p-3 text-[11px] font-mono text-sage overflow-x-auto leading-relaxed">// Drop into Axiom26 Express app before routes to expose /api/admin/ops-telemetry
+import type { Request, Response, NextFunction } from "express";
+
+const routeStats = new Map&lt;string, { count: number; errors: number; latencies: number[] }&gt;();
+
+export function opsTelemetryMiddleware(req: Request, res: Response, next: NextFunction) {
+  const start = performance.now();
+  res.on("finish", () => {
+    const key = `${req.method} ${req.route?.path || req.path}`;
+    const entry = routeStats.get(key) || { count: 0, errors: 0, latencies: [] };
+    entry.count += 1;
+    if (res.statusCode &gt;= 400) entry.errors += 1;
+    entry.latencies.push(Math.round(performance.now() - start));
+    if (entry.latencies.length &gt; 200) entry.latencies.shift();
+    routeStats.set(key, entry);
+  });
+  next();
+}
+
+export function getOpsSnapshot(io: any, prismaPoolActive: number) {
+  return {
+    timestamp: new Date().toISOString(),
+    memoryMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+    socketConnections: io?.engine?.clientsCount ?? 0,
+    dbPoolActive: prismaPoolActive,
+    endpoints: Array.from(routeStats.entries()).map(([route, s]) =&gt; {
+      const sorted = [...s.latencies].sort((a, b) =&gt; a - b);
+      return {
+        route,
+        rpm: s.count,
+        p50: sorted[Math.floor(sorted.length * 0.5)] || 0,
+        p95: sorted[Math.floor(sorted.length * 0.95)] || 0,
+        errRate: s.count ? Number(((s.errors / s.count) * 100).toFixed(2)) : 0
+      };
+    })
+  };
+}</pre>
+      </div>
+
+      <!-- Drop-in Frontend Web Vitals & Cache Telemetry Snippet -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-mono text-mint uppercase">2. Frontend Cache & Vitals Reporter (AxiomFrontend — src/utils/opsReporter.js)</span>
+          <button id="btn-copy-frontend" type="button" class="btn-outline px-2.5 py-1 rounded text-[11px] font-mono">Copy Code</button>
+        </div>
+        <pre id="code-frontend-snippet" class="panel-inset p-3 text-[11px] font-mono text-sage overflow-x-auto leading-relaxed">// Attach to src/services/api.js &amp; main.jsx to report client cache hit-rate &amp; LCP
+export const clientTelemetry = { cacheHits: 0, cacheMisses: 0, deduped: 0, lcpMs: null };
+
+if (typeof PerformanceObserver !== "undefined") {
+  new PerformanceObserver((list) =&gt; {
+    const entries = list.getEntries();
+    const last = entries[entries.length - 1];
+    if (last) clientTelemetry.lcpMs = Math.round(last.startTime);
+  }).observe({ type: "largest-contentful-paint", buffered: true });
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+  <script>
+    (function () {
+      // ============================================================
+      // STATE & AXIOM 4.0 DOMAIN MODEL
+      // ============================================================
+      const SCENARIOS = {
+        normal: {
+          label: 'Normal Traffic',
+          visitors: 118, feRps: 24, beRpm: 420, p95: 138, errPct: 0.12,
+          sockets: 94, wsPct: 92, cpu: 34, memMb: 218, dbPool: 6, dbLat: 24, evLoop: 8,
+          mobLcp: 3.4, deskLcp: 0.4, mobScore: 89, cacheHit: 68
+        },
+        checkin: {
+          label: 'Check-In Rush (150 Users)',
+          visitors: 214, feRps: 68, beRpm: 1280, p95: 340, errPct: 0.65,
+          sockets: 176, wsPct: 86, cpu: 68, memMb: 312, dbPool: 14, dbLat: 62, evLoop: 26,
+          mobLcp: 3.8, deskLcp: 0.5, mobScore: 84, cacheHit: 54
+        },
+        draw: {
+          label: 'Draw Publish Spike',
+          visitors: 290, feRps: 112, beRpm: 2150, p95: 620, errPct: 2.1,
+          sockets: 248, wsPct: 79, cpu: 84, memMb: 396, dbPool: 18, dbLat: 115, evLoop: 58,
+          mobLcp: 4.3, deskLcp: 0.7, mobScore: 76, cacheHit: 46
+        },
+        coldstart: {
+          label: 'Render Cold Start',
+          visitors: 82, feRps: 19, beRpm: 260, p95: 1840, errPct: 4.8,
+          sockets: 42, wsPct: 58, cpu: 72, memMb: 280, dbPool: 9, dbLat: 210, evLoop: 95,
+          mobLcp: 4.1, deskLcp: 0.6, mobScore: 80, cacheHit: 61
+        },
+        dbpressure: {
+          label: 'NeonDB Pool Pressure',
+          visitors: 188, feRps: 54, beRpm: 1490, p95: 980, errPct: 5.4,
+          sockets: 152, wsPct: 84, cpu: 62, memMb: 368, dbPool: 19, dbLat: 340, evLoop: 44,
+          mobLcp: 3.9, deskLcp: 0.5, mobScore: 82, cacheHit: 52
+        }
+      };
+
+      const state = {
+        activeTab: 'overview',
+        scenario: 'normal',
+        live: true,
+        mode: 'sim', // 'sim' | 'live'
+        liveConfig: {
+          baseUrl: 'https://axiom26-aezg.onrender.com',
+          secret: '',
+          pollMs: 3000,
+          consecutiveErrors: 0,
+          lastSyncAt: null
+        },
+        tickCount: 0,
+        lastProbe: new Date(),
+        endpointFilter: '',
+        logLayerFilter: 'all',
+        logLevelFilter: 'all',
+        logSearch: '',
+        controls: {
+          extendedCacheTtl: false,     // 20s -> 60s in api.js
+          renderKeepAlive: true,       // 5m /health ping
+          forcePollingFallback: false, // Socket.IO polling mode
+          pausePublicBallots: false,   // Shed public ballot writes
+          maintenanceBanner: false,    // Show soft queue banner
+          rateLimits: {
+            auth: { label: 'Auth & Profile Sync (/api/users/me)', limit: 60, min: 15, max: 150 },
+            checkin: { label: 'Venue Check-In (/api/check-in)', limit: 120, min: 20, max: 300 },
+            pairing: { label: 'Rounds & Pairings (/api/rounds, /api/pairing)', limit: 180, min: 30, max: 400 },
+            ballot: { label: 'Public Ballots & Results (/api/debates)', limit: 90, min: 20, max: 250 }
+          }
+        },
+        throttledEndpoints: {},
+        metrics: { ...SCENARIOS.normal, throttled429: 0 },
+        series: {
+          labels: [],
+          feRps: [],
+          beRps: [],
+          socketEps: []
+        },
+        endpoints: [
+          { id: 'health', method: 'GET', route: '/health', baseRpm: 18, baseP50: 12, baseP95: 24, baseErr: 0.0, group: 'auth' },
+          { id: 'users-me', method: 'GET', route: '/api/users/me', baseRpm: 92, baseP50: 48, baseP95: 118, baseErr: 0.1, group: 'auth' },
+          { id: 'events', method: 'GET', route: '/api/events', baseRpm: 76, baseP50: 36, baseP95: 94, baseErr: 0.05, group: 'pairing' },
+          { id: 'rounds', method: 'GET', route: '/api/rounds/event/:id', baseRpm: 114, baseP50: 54, baseP95: 146, baseErr: 0.15, group: 'pairing' },
+          { id: 'checkin', method: 'POST', route: '/api/check-in', baseRpm: 44, baseP50: 68, baseP95: 172, baseErr: 0.2, group: 'checkin' },
+          { id: 'pairing', method: 'GET', route: '/api/pairing/:roundId/preview', baseRpm: 22, baseP50: 112, baseP95: 265, baseErr: 0.1, group: 'pairing' },
+          { id: 'debates', method: 'GET', route: '/api/debates/my-debates', baseRpm: 68, baseP50: 44, baseP95: 128, baseErr: 0.12, group: 'ballot' },
+          { id: 'leaderboard', method: 'GET', route: '/api/stats/leaderboard', baseRpm: 52, baseP50: 62, baseP95: 158, baseErr: 0.08, group: 'ballot' }
+        ],
+        feRoutes: [
+          { route: '/', label: 'Landing Page', share: 0.26, baseLoad: 640 },
+          { route: '/dashboard', label: 'Participant Desk', share: 0.24, baseLoad: 420 },
+          { route: '/checkin', label: 'Venue QR Check-In', share: 0.18, baseLoad: 380 },
+          { route: '/admin/live', label: 'Organiser Live Console', share: 0.14, baseLoad: 510 },
+          { route: '/ballot/:token', label: 'Adjudicator Ballot', share: 0.11, baseLoad: 350 },
+          { route: '/dashboard/results', label: 'Leaderboard & Results', share: 0.07, baseLoad: 460 }
+        ],
+        alerts: [],
+        logs: [],
+        auditTrail: []
+      };
+
+      // Seed initial 16 history points
+      const now = Date.now();
+      for (let i = 15; i >= 0; i--) {
+        const t = new Date(now - i * 2000);
+        state.series.labels.push(formatTimeShort(t));
+        state.series.feRps.push(jitter(24, 3));
+        state.series.beRps.push(jitter(7, 1.5));
+        state.series.socketEps.push(jitter(12, 2.5));
+      }
+
+      // Seed initial logs & audit
+      pushLog('BACKEND', 'INFO', 'Docker HEALTHCHECK GET /health -> 200 OK (14ms)');
+      pushLog('FRONTEND', 'INFO', 'Vercel Edge www.axiom4.online serving 118 active sessions (apiCache hit 68%)');
+      pushLog('SOCKET', 'INFO', 'Socket.IO room sync active: 94 clients (92% WebSocket, 8% polling)');
+      pushLog('DATABASE', 'INFO', 'NeonDB Prisma pool steady at 6/20 connections (p95 24ms)');
+      pushAudit('Dashboard initialized in telemetry preview mode (AXIOM 4.0 stack).');
+
+      // ============================================================
+      // HELPERS
+      // ============================================================
+      function formatTimeShort(d) {
+        return d.toTimeString().slice(0, 8);
+      }
+
+      function jitter(base, spread) {
+        const val = base + (Math.random() - 0.5) * 2 * spread;
+        return Math.max(0, Number(val.toFixed(1)));
+      }
+
+      function showToast(msg, tone = 'mint') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const el = document.createElement('div');
+        const border = tone === 'warn' ? 'border-amberWarn text-amberWarn' : tone === 'error' ? 'border-roseSoft text-roseSoft' : 'border-mint text-mint';
+        el.className = `pointer-events-auto bg-carbon border ${border} px-3.5 py-2 rounded shadow-lg text-xs font-mono flex items-center gap-2`;
+        el.textContent = msg;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 3200);
+      }
+
+      function pushLog(layer, level, message) {
+        state.logs.unshift({
+          id: Date.now() + Math.random(),
+          time: formatTimeShort(new Date()),
+          layer,
+          level,
+          message
+        });
+        if (state.logs.length > 80) state.logs.pop();
+      }
+
+      function pushAudit(action) {
+        state.auditTrail.unshift({
+          time: formatTimeShort(new Date()),
+          action
+        });
+        if (state.auditTrail.length > 40) state.auditTrail.pop();
+      }
+
+      function upsertAlert(code, severity, layer, title, detail) {
+        const existing = state.alerts.find(a => a.code === code && a.status !== 'resolved');
+        if (existing) {
+          existing.detail = detail;
+          existing.time = formatTimeShort(new Date());
+          return;
+        }
+        state.alerts.unshift({
+          id: 'al-' + Date.now() + '-' + Math.floor(Math.random() * 999),
+          code,
+          severity, // 'critical' | 'warn'
+          layer,
+          title,
+          detail,
+          status: 'open', // 'open' | 'acked' | 'resolved'
+          time: formatTimeShort(new Date())
+        });
+      }
+
+      // ============================================================
+      // TELEMETRY COMPUTATION (REACTIVE TO SCENARIO + CONTROLS)
+      // ============================================================
+      function computeTick() {
+        const base = SCENARIOS[state.scenario];
+        const c = state.controls;
+
+        // Mitigation factors from Traffic Control switches
+        const cacheFactor = c.extendedCacheTtl ? 0.65 : 1.0;
+        const ballotFactor = c.pausePublicBallots ? 0.82 : 1.0;
+        const maintFactor = c.maintenanceBanner ? 0.72 : 1.0;
+        const keepAliveColdBonus = (state.scenario === 'coldstart' && c.renderKeepAlive) ? 0.45 : 1.0;
+
+        // Check rate limiting shed
+        const avgLimit = (
+          c.rateLimits.auth.limit +
+          c.rateLimits.checkin.limit +
+          c.rateLimits.pairing.limit +
+          c.rateLimits.ballot.limit
+        ) / 4;
+        const limitTightness = avgLimit < 90 ? (avgLimit / 90) : 1.0;
+        const rawBeRpm = base.beRpm * cacheFactor * ballotFactor * maintFactor;
+        const effectiveBeRpm = Math.round(jitter(rawBeRpm * limitTightness, rawBeRpm * 0.06));
+        const throttled429 = Math.max(0, Math.round(rawBeRpm - effectiveBeRpm));
+
+        const loadRatio = Math.max(0.4, effectiveBeRpm / 420);
+        const p95Base = base.p95 * keepAliveColdBonus * (c.extendedCacheTtl ? 0.82 : 1.0) * (limitTightness < 1 ? 0.78 : 1.0);
+        const p95 = Math.max(32, Math.round(jitter(p95Base, p95Base * 0.08)));
+
+        const dbPoolBase = Math.min(20, Math.max(2, Math.round(base.dbPool * cacheFactor * limitTightness * maintFactor)));
+        const dbPool = Math.min(20, Math.max(1, Math.round(jitter(dbPoolBase, 1))));
+        const dbLat = Math.max(10, Math.round(jitter(base.dbLat * (dbPool / Math.max(1, base.dbPool)), 8)));
+
+        const cpu = Math.min(99, Math.max(12, Math.round(jitter(base.cpu * cacheFactor * limitTightness * maintFactor, 4))));
+        const memMb = Math.min(500, Math.max(140, Math.round(jitter(base.memMb * (c.extendedCacheTtl ? 0.94 : 1.0), 10))));
+        const evLoop = Math.max(4, Math.round(jitter(base.evLoop * keepAliveColdBonus * limitTightness, 5)));
+
+        const visitors = Math.max(12, Math.round(jitter(base.visitors * maintFactor, 7)));
+        const feRps = Math.max(4, jitter(base.feRps * maintFactor, 3.5));
+        const sockets = Math.max(8, Math.round(jitter(base.sockets * maintFactor, 5)));
+        const wsPct = c.forcePollingFallback ? 0 : Math.min(99, Math.max(35, Math.round(jitter(base.wsPct, 2))));
+        const cacheHit = Math.min(94, Math.max(30, Math.round(jitter(base.cacheHit + (c.extendedCacheTtl ? 19 : 0), 2))));
+        const errPct = Math.max(0, Number(jitter(base.errPct * keepAliveColdBonus * (dbPool >= 18 ? 1.15 : 0.85), 0.15).toFixed(2)));
+
+        state.metrics = {
+          visitors, feRps, beRpm: effectiveBeRpm, throttled429,
+          p95, errPct, sockets, wsPct, cpu, memMb, dbPool, dbLat, evLoop,
+          mobLcp: Number(jitter(base.mobLcp, 0.15).toFixed(1)),
+          deskLcp: Number(jitter(base.deskLcp, 0.05).toFixed(1)),
+          mobScore: Math.min(100, Math.max(60, Math.round(base.mobScore))),
+          cacheHit
+        };
+
+        // Push rolling chart point
+        const ts = formatTimeShort(new Date());
+        state.series.labels.push(ts);
+        state.series.feRps.push(feRps);
+        state.series.beRps.push(Number((effectiveBeRpm / 60).toFixed(1)));
+        state.series.socketEps.push(Number(jitter(sockets * 0.16 * (state.scenario === 'draw' ? 2.4 : 1), 3).toFixed(1)));
+        if (state.series.labels.length > 20) {
+          state.series.labels.shift();
+          state.series.feRps.shift();
+          state.series.beRps.shift();
+          state.series.socketEps.shift();
+        }
+
+        // Dynamic alerts evaluation
+        if (p95 > 500) {
+          upsertAlert('high-p95', p95 > 1000 ? 'critical' : 'warn', 'BACKEND', 'Elevated API p95 Latency', `Render API p95 reached ${p95}ms. Consider extending Client Cache TTL or tightening rate limits.`);
+        }
+        if (dbPool >= 17) {
+          upsertAlert('db-pool', 'critical', 'DATABASE', 'NeonDB Connection Pool Saturation', `Prisma pool at ${dbPool}/20 connections (${dbLat}ms query p95). Enable Extended Cache TTL or shed ballot traffic.`);
+        }
+        if (errPct >= 2.0) {
+          upsertAlert('err-spike', errPct >= 4.0 ? 'critical' : 'warn', 'BACKEND', '5xx / Timeout Error Spike', `Backend error rate at ${errPct}% under ${base.label}.`);
+        }
+        if (state.metrics.mobLcp >= 3.5) {
+          upsertAlert('mob-lcp', 'warn', 'FRONTEND', 'Mobile LCP Above 3.5s Threshold', `Mobile LCP measured at ${state.metrics.mobLcp}s on /brand/shiva-music-sm.webp.`);
+        }
+
+        // Periodic log generation
+        state.tickCount += 1;
+        if (state.tickCount % 2 === 0) {
+          if (throttled429 > 0) {
+            pushLog('BACKEND', 'WARN', `Rate limiter shed ${throttled429} req/min (HTTP 429) to protect NeonDB pool`);
+          } else if (p95 > 500) {
+            pushLog('BACKEND', 'ERROR', `Slow response on GET /api/rounds/event/:id — p95 ${p95}ms (DB pool ${dbPool}/20)`);
+          } else if (state.tickCount % 4 === 0) {
+            pushLog('SOCKET', 'INFO', `Broadcast round:status to ${sockets} sockets (${wsPct}% WS, ${100 - wsPct}% polling)`);
+          } else {
+            pushLog('FRONTEND', 'INFO', `Vercel Edge served ${feRps} req/s | apiCache hit ${cacheHit}% | ${visitors} active`);
+          }
+        }
+      }
+
+      // ============================================================
+      // CHARTS INITIALIZATION
+      // ============================================================
+      Chart.defaults.color = '#BDD9CA';
+      Chart.defaults.borderColor = 'rgba(74, 86, 70, 0.45)';
+      Chart.defaults.font.family = "'JetBrains Mono', monospace";
+      Chart.defaults.font.size = 11;
+
+      const charts = {};
+
+      function initCharts() {
+        const ctxOverview = document.getElementById('chart-overview-traffic').getContext('2d');
+        charts.overview = new Chart(ctxOverview, {
+          type: 'line',
+          data: {
+            labels: state.series.labels,
+            datasets: [
+              { label: 'Frontend Edge (req/s)', data: state.series.feRps, borderColor: '#B9F5D8', backgroundColor: 'rgba(185,245,216,0.08)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 2 },
+              { label: 'Backend API (req/s)', data: state.series.beRps, borderColor: '#F5C77E', backgroundColor: 'rgba(245,199,126,0.06)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 2 },
+              { label: 'Socket.IO (events/s)', data: state.series.socketEps, borderColor: '#6B8F71', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 2, borderDash: [4, 3], pointRadius: 1.5 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 250 },
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+
+        const ctxFeRoutes = document.getElementById('chart-fe-routes').getContext('2d');
+        charts.feRoutes = new Chart(ctxFeRoutes, {
+          type: 'bar',
+          data: {
+            labels: state.feRoutes.map(r => r.route),
+            datasets: [{
+              label: 'Active Users',
+              data: state.feRoutes.map(r => Math.round(state.metrics.visitors * r.share)),
+              backgroundColor: '#B9F5D8',
+              borderRadius: 3
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true }, y: { grid: { display: false } } }
+          }
+        });
+
+        const ctxBeLat = document.getElementById('chart-be-latency').getContext('2d');
+        charts.beLatency = new Chart(ctxBeLat, {
+          type: 'bar',
+          data: {
+            labels: state.endpoints.map(e => e.route.replace('/api/', '/')),
+            datasets: [
+              { label: 'p50 (ms)', data: state.endpoints.map(e => e.baseP50), backgroundColor: '#6B8F71', borderRadius: 2 },
+              { label: 'p95 (ms)', data: state.endpoints.map(e => e.baseP95), backgroundColor: '#B9F5D8', borderRadius: 2 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', align: 'end' } },
+            scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
+          }
+        });
+
+        const ctxBeSockets = document.getElementById('chart-be-sockets').getContext('2d');
+        charts.beSockets = new Chart(ctxBeSockets, {
+          type: 'doughnut',
+          data: {
+            labels: ['checkin:update', 'round:status', 'debate:result', 'pairings:gen', 'leaderboard'],
+            datasets: [{
+              data: [34, 24, 18, 14, 10],
+              backgroundColor: ['#B9F5D8', '#6B8F71', '#F5C77E', '#9FE3C2', '#4A5646'],
+              borderColor: '#1D1E18',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10 } }
+            }
+          }
+        });
+      }
+
+      // ============================================================
+      // RENDERING
+      // ============================================================
+      function getEndpointSnapshot() {
+        const mult = state.metrics.beRpm / 420;
+        const latMult = state.metrics.p95 / 138;
+        return state.endpoints.map(e => {
+          const isThrottled = Boolean(state.throttledEndpoints[e.id]);
+          const rpm = Math.max(1, Math.round(e.baseRpm * mult * (isThrottled ? 0.55 : 1)));
+          const p50 = Math.max(8, Math.round(e.baseP50 * latMult * (isThrottled ? 0.8 : 1)));
+          const p95 = Math.max(16, Math.round(e.baseP95 * latMult * (isThrottled ? 0.78 : 1)));
+          const err = Number((e.baseErr + (state.metrics.errPct * 0.45)).toFixed(2));
+          return { ...e, rpm, p50, p95, err, isThrottled };
+        });
+      }
+
+      function renderAll() {
+        const m = state.metrics;
+        const openAlerts = state.alerts.filter(a => a.status !== 'resolved');
+        const hasCritical = openAlerts.some(a => a.severity === 'critical') || m.p95 > 900 || m.dbPool >= 18;
+        const hasWarn = openAlerts.length > 0 || m.p95 > 400 || m.cpu > 75;
+
+        // Global status pill
+        const dot = document.getElementById('global-status-dot');
+        const txt = document.getElementById('global-status-text');
+        const pill = document.getElementById('global-status-pill');
+        if (hasCritical) {
+          dot.className = 'w-2 h-2 rounded-full bg-roseSoft pulse-dot';
+          txt.textContent = 'INCIDENT ACTIVE';
+          pill.className = 'hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-roseSoft bg-crimson/30 text-roseSoft';
+        } else if (hasWarn) {
+          dot.className = 'w-2 h-2 rounded-full bg-amberWarn pulse-dot';
+          txt.textContent = 'ELEVATED LOAD';
+          pill.className = 'hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-amberWarn/60 bg-carbon text-amberWarn';
+        } else {
+          dot.className = 'w-2 h-2 rounded-full bg-mint pulse-dot';
+          txt.textContent = 'ALL SYSTEMS NOMINAL';
+          pill.className = 'hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-olive bg-carbon text-mint';
+        }
+
+        // Alert badge
+        const badge = document.getElementById('nav-alert-badge');
+        badge.textContent = openAlerts.length;
+        badge.className = openAlerts.length > 0
+          ? 'px-1.5 py-0.5 text-[10px] font-mono rounded bg-crimson text-alabaster border border-roseSoft'
+          : 'px-1.5 py-0.5 text-[10px] font-mono rounded bg-elevated text-mint border border-olive';
+
+        // Mitigation bar
+        const activeFlags = [];
+        if (state.controls.extendedCacheTtl) activeFlags.push('Client Cache 60s');
+        if (state.controls.forcePollingFallback) activeFlags.push('Socket Polling Fallback');
+        if (state.controls.pausePublicBallots) activeFlags.push('Public Ballots Paused');
+        if (state.controls.maintenanceBanner) activeFlags.push('Queue Banner Active');
+        const bar = document.getElementById('active-mitigation-bar');
+        if (activeFlags.length > 0) {
+          bar.classList.remove('hidden');
+          document.getElementById('mitigation-summary').textContent = 'Active Traffic Controls: ' + activeFlags.join(' • ');
+        } else {
+          bar.classList.add('hidden');
+        }
+
+        // Overview KPIs
+        document.getElementById('kpi-visitors').textContent = m.visitors;
+        document.getElementById('kpi-visitors-delta').textContent = state.scenario === 'normal' ? '+6%' : state.scenario === 'draw' ? '+145%' : '+81%';
+        document.getElementById('kpi-visitors-sub').textContent = `Edge RPS: ${m.feRps} / s`;
+
+        document.getElementById('kpi-rpm').textContent = m.beRpm;
+        const errEl = document.getElementById('kpi-err-rate');
+        errEl.textContent = `${m.errPct}% err`;
+        errEl.className = `text-xs font-mono ${m.errPct >= 2 ? 'text-roseSoft' : m.errPct >= 0.8 ? 'text-amberWarn' : 'text-mint'}`;
+        document.getElementById('kpi-rpm-sub').textContent = `Throttled (429): ${m.throttled429} / min`;
+
+        document.getElementById('kpi-p95').innerHTML = `${m.p95}<span class="text-xl text-mutedMint ml-0.5">ms</span>`;
+        const p95Badge = document.getElementById('kpi-p95-badge');
+        if (m.p95 > 800) {
+          p95Badge.textContent = 'CRITICAL';
+          p95Badge.className = 'text-xs font-mono px-1.5 py-0.5 rounded bg-crimson/40 border border-roseSoft text-roseSoft';
+        } else if (m.p95 > 350) {
+          p95Badge.textContent = 'SLOW';
+          p95Badge.className = 'text-xs font-mono px-1.5 py-0.5 rounded bg-obsidian border border-amberWarn text-amberWarn';
+        } else {
+          p95Badge.textContent = 'HEALTHY';
+          p95Badge.className = 'text-xs font-mono px-1.5 py-0.5 rounded bg-obsidian border border-olive text-mint';
+        }
+        document.getElementById('kpi-db-sub').textContent = `NeonDB Pool: ${m.dbPool} / 20`;
+
+        document.getElementById('kpi-sockets').textContent = m.sockets;
+        document.getElementById('kpi-ws-ratio').textContent = `${m.wsPct}% WS`;
+        document.getElementById('kpi-cache-sub').textContent = `Client Cache Hit: ${m.cacheHit}%`;
+        document.getElementById('last-probe-time').textContent = formatTimeShort(state.lastProbe);
+
+        // Service Health Matrix
+        const services = [
+          { name: 'Vercel Frontend', host: 'www.axiom4.online', latency: `${Math.round(m.deskLcp * 100)}ms edge`, status: m.mobLcp > 4.2 ? 'WARN' : 'OK' },
+          { name: 'Render Express API', host: 'axiom26-aezg.onrender', latency: `${m.p95}ms p95`, status: m.p95 > 800 ? 'CRIT' : m.p95 > 350 ? 'WARN' : 'OK' },
+          { name: 'NeonDB PostgreSQL', host: 'Prisma Pool', latency: `${m.dbPool}/20 (${m.dbLat}ms)`, status: m.dbPool >= 17 ? 'CRIT' : m.dbPool >= 13 ? 'WARN' : 'OK' },
+          { name: 'Socket.IO Realtime', host: 'Direct WS / Poll', latency: `${m.sockets} live (${m.wsPct}% WS)`, status: m.wsPct < 60 && !state.controls.forcePollingFallback ? 'WARN' : 'OK' },
+          { name: 'Clerk / Auth Sync', host: 'clerk.axiom4.online', latency: '99.9% JWKS', status: 'OK' }
+        ];
+        document.getElementById('service-health-grid').innerHTML = services.map(s => {
+          const pillCls = s.status === 'CRIT' ? 'bg-crimson/40 text-roseSoft border-roseSoft' : s.status === 'WARN' ? 'bg-obsidian text-amberWarn border-amberWarn' : 'bg-obsidian text-mint border-olive';
+          return `
+            <div class="panel-inset p-3 flex flex-col justify-between gap-2">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="text-xs font-semibold text-alabaster">${s.name}</div>
+                  <div class="text-[10px] font-mono text-moss truncate">${s.host}</div>
+                </div>
+                <span class="px-1.5 py-0.5 text-[10px] font-mono rounded border ${pillCls}">${s.status}</span>
+              </div>
+              <div class="text-xs font-mono text-sage">${s.latency}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Quick Guards in Overview
+        const quickGuards = [
+          { key: 'extendedCacheTtl', label: 'Extend Client Cache (20s → 60s)', desc: 'Cuts backend GET load ~35%' },
+          { key: 'renderKeepAlive', label: 'Render /health Warmup Ping', desc: 'Prevents cold-start spikes' },
+          { key: 'maintenanceBanner', label: 'Soft Queue / Traffic Banner', desc: 'Throttles non-critical refreshes' },
+          { key: 'forcePollingFallback', label: 'Force Socket HTTP Polling', desc: 'Bypass flaky venue Wi-Fi WS drops' }
+        ];
+        document.getElementById('quick-guards-list').innerHTML = quickGuards.map(g => {
+          const on = state.controls[g.key];
+          return `
+            <div class="flex items-center justify-between gap-3 panel-inset p-2.5">
+              <div class="min-w-0">
+                <div class="text-xs font-medium text-alabaster truncate">${g.label}</div>
+                <div class="text-[10px] font-mono text-moss truncate">${g.desc}</div>
+              </div>
+              <button type="button" data-toggle-control="${g.key}" class="shrink-0 px-2.5 py-1 rounded text-[11px] font-mono border ${on ? 'bg-mint text-obsidian border-mint font-semibold' : 'bg-carbon text-mutedMint border-olive hover:border-moss'}">
+                ${on ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        // Frontend View Metrics
+        document.getElementById('fe-desk-lcp').textContent = `${m.deskLcp}s`;
+        document.getElementById('fe-mob-lcp').textContent = `${m.mobLcp}s`;
+        document.getElementById('fe-mob-lcp').className = `text-sm font-mono font-semibold ${m.mobLcp > 3.5 ? 'text-roseSoft' : 'text-amberWarn'}`;
+        document.getElementById('fe-mobile-score').textContent = m.mobScore;
+        document.getElementById('fe-cache-hit').textContent = `${m.cacheHit}%`;
+        document.getElementById('fe-cache-ttl-label').textContent = state.controls.extendedCacheTtl ? 'TTL: 60s (Extended)' : 'TTL: 20s (api.js default)';
+        document.getElementById('fe-dedupe-saved').textContent = `${Math.round(m.beRpm * 0.32)} req/min saved`;
+
+        document.getElementById('fe-routes-table').innerHTML = state.feRoutes.map(r => {
+          const users = Math.max(2, Math.round(m.visitors * r.share));
+          const loadMs = Math.round(r.baseLoad * (m.p95 / 138));
+          const ok = loadMs < 900;
+          return `
+            <tr class="hover:bg-elevated/60">
+              <td class="py-2 pr-2 text-alabaster">${r.route} <span class="text-moss hidden sm:inline">(${r.label})</span></td>
+              <td class="py-2 px-2 text-right text-sage">${users}</td>
+              <td class="py-2 px-2 text-right ${ok ? 'text-mint' : 'text-amberWarn'}">${loadMs}ms</td>
+              <td class="py-2 pl-2 text-right"><span class="px-1.5 py-0.5 rounded text-[10px] border ${ok ? 'border-olive text-mint' : 'border-amberWarn text-amberWarn'}">${ok ? 'FAST' : 'SLOW'}</span></td>
+            </tr>
+          `;
+        }).join('');
+
+        // Backend View Gauges
+        setGauge('be-cpu', m.cpu, `${m.cpu}%`, 75, 88);
+        setGauge('be-mem', Math.round((m.memMb / 512) * 100), `${m.memMb} / 512 MB`, 75, 88);
+        setGauge('be-db', Math.round((m.dbPool / 20) * 100), `${m.dbPool} / 20`, 70, 85);
+        document.getElementById('be-evloop').textContent = `Event Loop Lag: ${m.evLoop}ms`;
+        document.getElementById('be-db-lat').textContent = `Query p95: ${m.dbLat}ms`;
+        document.getElementById('be-ws-val').textContent = `${m.wsPct}% WS / ${100 - m.wsPct}% Poll`;
+        document.getElementById('be-ws-bar').style.width = `${m.wsPct}%`;
+        document.getElementById('be-rooms-val').textContent = `Active Rooms: ${Math.max(4, Math.round(m.sockets / 7))}`;
+
+        // Backend Endpoints Table
+        const eps = getEndpointSnapshot().filter(e =>
+          !state.endpointFilter || e.route.toLowerCase().includes(state.endpointFilter.toLowerCase()) || e.method.toLowerCase().includes(state.endpointFilter.toLowerCase())
+        );
+        document.getElementById('be-endpoints-table').innerHTML = eps.map(e => {
+          const st = e.p95 > 700 || e.err > 3 ? 'CRIT' : e.p95 > 300 || e.err > 1 ? 'WARN' : 'OK';
+          const stCls = st === 'CRIT' ? 'border-roseSoft text-roseSoft bg-crimson/30' : st === 'WARN' ? 'border-amberWarn text-amberWarn' : 'border-olive text-mint';
+          return `
+            <tr class="hover:bg-elevated/60">
+              <td class="py-2 pr-3"><span class="text-mint font-semibold mr-1.5">${e.method}</span><span class="text-alabaster">${e.route}</span></td>
+              <td class="py-2 px-2 text-right text-sage">${e.rpm}</td>
+              <td class="py-2 px-2 text-right text-mutedMint">${e.p50}ms</td>
+              <td class="py-2 px-2 text-right ${e.p95 > 400 ? 'text-amberWarn' : 'text-alabaster'}">${e.p95}ms</td>
+              <td class="py-2 px-2 text-right ${e.err > 1.5 ? 'text-roseSoft' : 'text-sage'}">${e.err}%</td>
+              <td class="py-2 px-2 text-center"><span class="px-1.5 py-0.5 rounded text-[10px] border ${stCls}">${st}</span></td>
+              <td class="py-2 pl-2 text-right">
+                <button type="button" data-throttle-ep="${e.id}" class="px-2 py-0.5 rounded text-[10px] border ${e.isThrottled ? 'bg-amberWarn text-obsidian border-amberWarn font-semibold' : 'border-olive text-mutedMint hover:text-alabaster'}">
+                  ${e.isThrottled ? 'Throttled' : 'Throttle'}
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        // Traffic Control View
+        renderTrafficControls();
+        renderAuditTrail();
+
+        // Alerts & Logs Views
+        renderAlerts('overview-alerts-list', openAlerts.slice(0, 3));
+        renderAlerts('full-alerts-list', state.alerts);
+        renderLogs();
+
+        // Update Charts
+        charts.overview.data.labels = state.series.labels;
+        charts.overview.data.datasets[0].data = state.series.feRps;
+        charts.overview.data.datasets[1].data = state.series.beRps;
+        charts.overview.data.datasets[2].data = state.series.socketEps;
+        charts.overview.update('none');
+
+        charts.feRoutes.data.datasets[0].data = state.feRoutes.map(r => Math.max(2, Math.round(m.visitors * r.share)));
+        charts.feRoutes.update('none');
+
+        const allEps = getEndpointSnapshot();
+        charts.beLatency.data.datasets[0].data = allEps.map(e => e.p50);
+        charts.beLatency.data.datasets[1].data = allEps.map(e => e.p95);
+        charts.beLatency.update('none');
+
+        const socketDist = state.scenario === 'checkin' ? [52, 18, 12, 10, 8] : state.scenario === 'draw' ? [18, 22, 16, 34, 10] : [34, 24, 18, 14, 10];
+        charts.beSockets.data.datasets[0].data = socketDist;
+        charts.beSockets.update('none');
+      }
+
+      function setGauge(prefix, pct, label, warnAt, critAt) {
+        document.getElementById(`${prefix}-val`).textContent = label;
+        const bar = document.getElementById(`${prefix}-bar`);
+        bar.style.width = `${Math.min(100, pct)}%`;
+        bar.className = `h-full transition-all duration-500 ${pct >= critAt ? 'bg-roseSoft' : pct >= warnAt ? 'bg-amberWarn' : 'bg-mint'}`;
+      }
+
+      function renderTrafficControls() {
+        const rlContainer = document.getElementById('rate-limit-controls');
+        if (!rlContainer.dataset.initialized) {
+          rlContainer.dataset.initialized = '1';
+          rlContainer.innerHTML = Object.entries(state.controls.rateLimits).map(([key, cfg]) => `
+            <div class="panel-inset p-3 space-y-2">
+              <div class="flex items-center justify-between text-xs font-mono">
+                <span class="text-alabaster">${cfg.label}</span>
+                <span id="rate-val-${key}" class="text-mint font-semibold">${cfg.limit} req/min</span>
+              </div>
+              <input id="rate-input-${key}" type="range" data-rate-key="${key}" min="${cfg.min}" max="${cfg.max}" step="5" value="${cfg.limit}" class="w-full cursor-pointer" />
+              <div class="flex justify-between text-[10px] font-mono text-moss">
+                <span>Strict (${cfg.min})</span>
+                <span>Burst (${cfg.max})</span>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          Object.entries(state.controls.rateLimits).forEach(([key, cfg]) => {
+            const valEl = document.getElementById(`rate-val-${key}`);
+            const inpEl = document.getElementById(`rate-input-${key}`);
+            if (valEl) valEl.textContent = `${cfg.limit} req/min`;
+            if (inpEl && document.activeElement !== inpEl) inpEl.value = cfg.limit;
+          });
+        }
+
+        const breakers = [
+          { key: 'extendedCacheTtl', title: 'Extend Frontend apiCache TTL (20s → 60s)', desc: 'Reduces duplicate GET /api/events and /api/rounds traffic by ~35%.' },
+          { key: 'renderKeepAlive', title: 'Render /health Warmup Scheduler', desc: 'Keeps Node 22 container warm to eliminate cold-start 1.8s+ spikes.' },
+          { key: 'forcePollingFallback', title: 'Force Socket.IO HTTP Long-Polling', desc: 'Stabilizes live updates if college Wi-Fi drops WebSocket upgrades.' },
+          { key: 'pausePublicBallots', title: 'Pause Non-Admin Public Ballot Submissions', desc: 'Sheds write load on Prisma/NeonDB during draw generation.' },
+          { key: 'maintenanceBanner', title: 'Enable Soft Queue / Maintenance Banner', desc: 'Displays a calm wait notice on www.axiom4.online and slows auto-refresh.' }
+        ];
+        document.getElementById('circuit-breaker-controls').innerHTML = breakers.map(b => {
+          const on = state.controls[b.key];
+          return `
+            <div class="panel-inset p-3 flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-semibold text-alabaster">${b.title}</div>
+                <div class="text-[11px] text-mutedMint mt-0.5">${b.desc}</div>
+              </div>
+              <button type="button" data-toggle-control="${b.key}" class="shrink-0 px-3 py-1.5 rounded text-xs font-mono border ${on ? 'bg-mint text-obsidian border-mint font-semibold' : 'bg-carbon text-mutedMint border-olive hover:border-moss'}">
+                ${on ? 'ENABLED' : 'DISABLED'}
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderAuditTrail() {
+        const el = document.getElementById('audit-trail-list');
+        if (state.auditTrail.length === 0) {
+          el.innerHTML = '<div class="text-moss py-2">No control changes recorded yet.</div>';
+          return;
+        }
+        el.innerHTML = state.auditTrail.map(a => `
+          <div class="panel-inset px-3 py-2 flex items-start gap-3">
+            <span class="text-mint shrink-0">${a.time}</span>
+            <span class="text-sage">${a.action}</span>
+          </div>
+        `).join('');
+      }
+
+      function renderAlerts(containerId, list) {
+        const el = document.getElementById(containerId);
+        if (!list.length) {
+          el.innerHTML = '<div class="panel-inset p-3 text-xs font-mono text-mint">No active incidents. All frontend & backend checks are within threshold.</div>';
+          return;
+        }
+        el.innerHTML = list.map(a => {
+          const badge = a.severity === 'critical' ? 'bg-crimson text-alabaster border-roseSoft' : 'bg-obsidian text-amberWarn border-amberWarn';
+          const opacity = a.status === 'resolved' ? 'opacity-55' : '';
+          return `
+            <div class="panel-inset p-3 flex flex-wrap items-center justify-between gap-3 ${opacity}">
+              <div class="space-y-0.5 min-w-0">
+                <div class="flex items-center gap-2 text-xs font-mono">
+                  <span class="px-1.5 py-0.5 rounded text-[10px] border ${badge}">${a.severity.toUpperCase()}</span>
+                  <span class="text-moss">[${a.layer}]</span>
+                  <span class="text-alabaster font-semibold">${a.title}</span>
+                  <span class="text-moss">${a.time}</span>
+                </div>
+                <div class="text-xs text-mutedMint">${a.detail}</div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                ${a.status === 'open' ? `<button type="button" data-alert-ack="${a.id}" class="btn-outline px-2.5 py-1 rounded text-[11px] font-mono">Ack</button>` : ''}
+                ${a.status !== 'resolved' ? `<button type="button" data-alert-resolve="${a.id}" class="btn-mint px-2.5 py-1 rounded text-[11px] font-mono">Resolve</button>` : '<span class="text-[11px] font-mono text-mint">RESOLVED</span>'}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderLogs() {
+        const filtered = state.logs.filter(l => {
+          if (state.logLayerFilter !== 'all' && l.layer !== state.logLayerFilter) return false;
+          if (state.logLevelFilter !== 'all' && l.level !== state.logLevelFilter) return false;
+          if (state.logSearch && !l.message.toLowerCase().includes(state.logSearch.toLowerCase())) return false;
+          return true;
+        });
+        const container = document.getElementById('log-stream-container');
+        if (!filtered.length) {
+          container.innerHTML = '<div class="text-moss">No log entries match the current filter.</div>';
+          return;
+        }
+        container.innerHTML = filtered.map(l => {
+          const lvlCls = l.level === 'ERROR' ? 'text-roseSoft' : l.level === 'WARN' ? 'text-amberWarn' : 'text-mint';
+          return `
+            <div class="flex items-start gap-2 border-b border-olive/30 pb-1">
+              <span class="text-moss shrink-0">${l.time}</span>
+              <span class="${lvlCls} shrink-0 w-11">${l.level}</span>
+              <span class="text-sage shrink-0 w-20">[${l.layer}]</span>
+              <span class="text-alabaster break-words">${l.message}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // ============================================================
+      // EVENT LISTENERS & ACTIONS
+      // ============================================================
+      function switchTab(tab) {
+        state.activeTab = tab;
+        document.querySelectorAll('[data-tab]').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
+        ['overview', 'frontend', 'backend', 'traffic', 'logs'].forEach(v => {
+          document.getElementById(`view-${v}`).classList.toggle('hidden', v !== tab);
+        });
+        // Resize charts when becoming visible
+        Object.values(charts).forEach(ch => ch && ch.resize());
+      }
+
+      document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      document.addEventListener('click', (e) => {
+        const jump = e.target.closest('[data-jump]');
+        if (jump) {
+          switchTab(jump.dataset.jump);
+          return;
+        }
+
+        const toggleBtn = e.target.closest('[data-toggle-control]');
+        if (toggleBtn) {
+          const key = toggleBtn.dataset.toggleControl;
+          state.controls[key] = !state.controls[key];
+          pushAudit(`${key} switched ${state.controls[key] ? 'ON' : 'OFF'}`);
+          pushLog('BACKEND', 'INFO', `Traffic control updated: ${key} = ${state.controls[key]}`);
+          computeTick();
+          renderAll();
+          showToast(`${key} ${state.controls[key] ? 'enabled' : 'disabled'}`);
+          return;
+        }
+
+        const throttleBtn = e.target.closest('[data-throttle-ep]');
+        if (throttleBtn) {
+          const id = throttleBtn.dataset.throttleEp;
+          state.throttledEndpoints[id] = !state.throttledEndpoints[id];
+          const ep = state.endpoints.find(x => x.id === id);
+          pushAudit(`${state.throttledEndpoints[id] ? 'Enabled' : 'Disabled'} route throttle on ${ep.route}`);
+          computeTick();
+          renderAll();
+          showToast(`${ep.route} ${state.throttledEndpoints[id] ? 'throttled' : 'unthrottled'}`);
+          return;
+        }
+
+        const ackBtn = e.target.closest('[data-alert-ack]');
+        if (ackBtn) {
+          const al = state.alerts.find(a => a.id === ackBtn.dataset.alertAck);
+          if (al) {
+            al.status = 'acked';
+            pushAudit(`Acknowledged alert: ${al.title}`);
+            renderAll();
+            showToast('Alert acknowledged');
+          }
+          return;
+        }
+
+        const resBtn = e.target.closest('[data-alert-resolve]');
+        if (resBtn) {
+          const al = state.alerts.find(a => a.id === resBtn.dataset.alertResolve);
+          if (al) {
+            al.status = 'resolved';
+            pushAudit(`Resolved alert: ${al.title}`);
+            renderAll();
+            showToast('Alert resolved');
+          }
+        }
+      });
+
+      document.addEventListener('input', (e) => {
+        if (e.target.matches('[data-rate-key]')) {
+          const key = e.target.dataset.rateKey;
+          const val = Number(e.target.value);
+          state.controls.rateLimits[key].limit = val;
+          computeTick();
+          renderAll();
+        }
+      });
+
+      document.addEventListener('change', (e) => {
+        if (e.target.matches('[data-rate-key]')) {
+          const key = e.target.dataset.rateKey;
+          const cfg = state.controls.rateLimits[key];
+          pushAudit(`Adjusted rate limit for ${cfg.label} to ${cfg.limit} req/min`);
+          showToast(`Rate limit updated: ${cfg.limit} req/min`);
+        }
+      });
+
+      document.getElementById('scenario-select').addEventListener('change', (e) => {
+        state.scenario = e.target.value;
+        pushAudit(`Switched traffic scenario to: ${SCENARIOS[state.scenario].label}`);
+        pushLog('BACKEND', state.scenario === 'normal' ? 'INFO' : 'WARN', `Traffic profile changed: ${SCENARIOS[state.scenario].label}`);
+        computeTick();
+        renderAll();
+        showToast(`Scenario: ${SCENARIOS[state.scenario].label}`, state.scenario === 'normal' ? 'mint' : 'warn');
+      });
+
+      document.getElementById('btn-live-toggle').addEventListener('click', () => {
+        state.live = !state.live;
+        document.getElementById('live-label').textContent = state.live ? 'LIVE' : 'PAUSED';
+        document.getElementById('live-dot').className = state.live ? 'w-2 h-2 rounded-full bg-mint pulse-dot' : 'w-2 h-2 rounded-full bg-moss';
+        showToast(state.live ? 'Live telemetry resumed' : 'Live telemetry paused');
+      });
+
+      document.getElementById('btn-probe-now').addEventListener('click', async () => {
+        state.lastProbe = new Date();
+        if (state.mode === 'live') {
+          const ok = await fetchLiveTelemetry();
+          pushAudit('Executed manual live Render + NeonDB health probe.');
+          showToast(ok ? 'Live health probe complete' : 'Live probe failed', ok ? 'mint' : 'error');
+          return;
+        }
+        computeTick();
+        pushLog('BACKEND', 'INFO', `Manual multi-layer health probe completed: Vercel OK, Render ${state.metrics.p95}ms, NeonDB ${state.metrics.dbLat}ms`);
+        pushAudit('Executed manual full-stack health probe.');
+        renderAll();
+        showToast('Full-stack health probe complete');
+      });
+
+      document.getElementById('btn-reset-controls').addEventListener('click', () => {
+        state.controls.extendedCacheTtl = false;
+        state.controls.forcePollingFallback = false;
+        state.controls.pausePublicBallots = false;
+        state.controls.maintenanceBanner = false;
+        state.controls.renderKeepAlive = true;
+        state.throttledEndpoints = {};
+        pushAudit('Reset all traffic controls & circuit breakers to defaults.');
+        computeTick();
+        renderAll();
+        showToast('All traffic controls reset');
+      });
+
+      document.getElementById('endpoint-search').addEventListener('input', (e) => {
+        state.endpointFilter = e.target.value;
+        renderAll();
+      });
+
+      document.getElementById('log-layer-filter').addEventListener('change', (e) => {
+        state.logLayerFilter = e.target.value;
+        renderLogs();
+      });
+
+      document.getElementById('log-level-filter').addEventListener('change', (e) => {
+        state.logLevelFilter = e.target.value;
+        renderLogs();
+      });
+
+      document.getElementById('log-search').addEventListener('input', (e) => {
+        state.logSearch = e.target.value;
+        renderLogs();
+      });
+
+      document.getElementById('btn-clear-audit').addEventListener('click', () => {
+        state.auditTrail = [];
+        renderAuditTrail();
+        showToast('Audit trail cleared');
+      });
+
+      document.getElementById('btn-resolve-all-alerts').addEventListener('click', () => {
+        state.alerts.forEach(a => { a.status = 'resolved'; });
+        pushAudit('Resolved all open alerts.');
+        renderAll();
+        showToast('All alerts resolved');
+      });
+
+      // Modal & IO Handlers
+      const modal = document.getElementById('io-modal');
+      document.getElementById('btn-open-io').addEventListener('click', () => modal.classList.remove('hidden'));
+      document.getElementById('btn-close-io').addEventListener('click', () => modal.classList.add('hidden'));
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') modal.classList.add('hidden'); });
+
+      function copyText(text, label) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => showToast(`${label} copied`)).catch(() => fallbackCopy(text, label));
+        } else {
+          fallbackCopy(text, label);
+        }
+      }
+      function fallbackCopy(text, label) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast(`${label} copied`); } catch { showToast('Copy failed', 'error'); }
+        ta.remove();
+      }
+
+      document.getElementById('btn-copy-backend').addEventListener('click', () => {
+        copyText(document.getElementById('code-backend-snippet').textContent, 'Express middleware');
+      });
+      document.getElementById('btn-copy-frontend').addEventListener('click', () => {
+        copyText(document.getElementById('code-frontend-snippet').textContent, 'Frontend reporter');
+      });
+
+      document.getElementById('btn-export-json').addEventListener('click', () => {
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          scenario: state.scenario,
+          metrics: state.metrics,
+          controls: state.controls,
+          endpoints: getEndpointSnapshot(),
+          alerts: state.alerts
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `axiom4-ops-snapshot-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('Exported JSON snapshot');
+      });
+
+      document.getElementById('btn-export-csv').addEventListener('click', () => {
+        const rows = [['Method', 'Route', 'RPM', 'p50_ms', 'p95_ms', 'Error_Pct', 'Throttled']];
+        getEndpointSnapshot().forEach(e => rows.push([e.method, e.route, e.rpm, e.p50, e.p95, e.err, e.isThrottled]));
+        const csv = rows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `axiom4-endpoints-${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('Exported endpoints CSV');
+      });
+
+      document.getElementById('input-import-file').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            if (data.metrics) Object.assign(state.metrics, data.metrics);
+            if (typeof data.memoryMb === 'number') state.metrics.memMb = data.memoryMb;
+            if (typeof data.socketConnections === 'number') state.metrics.sockets = data.socketConnections;
+            if (typeof data.dbPoolActive === 'number') state.metrics.dbPool = data.dbPoolActive;
+            if (Array.isArray(data.endpoints) && data.endpoints.length > 0) {
+              data.endpoints.forEach(imp => {
+                const match = state.endpoints.find(ep => imp.route && imp.route.includes(ep.route));
+                if (match) {
+                  if (typeof imp.rpm === 'number') match.baseRpm = Math.max(1, imp.rpm);
+                  if (typeof imp.p50 === 'number') match.baseP50 = Math.max(1, imp.p50);
+                  if (typeof imp.p95 === 'number') match.baseP95 = Math.max(1, imp.p95);
+                }
+              });
+            }
+            state.live = false;
+            document.getElementById('live-label').textContent = 'IMPORTED';
+            document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-amberWarn';
+            pushAudit(`Imported telemetry snapshot from ${file.name}`);
+            renderAll();
+            modal.classList.add('hidden');
+            showToast(`Loaded ${file.name}`);
+          } catch {
+            showToast('Invalid JSON telemetry file', 'error');
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      });
+
+      // ============================================================
+      // LIVE PRODUCTION POLLING & CONTROL SYNC (ops.axiom4.online)
+      // ============================================================
+      function updateConnUi() {
+        const dot = document.getElementById('conn-mode-dot');
+        const lbl = document.getElementById('conn-mode-label');
+        const badge = document.getElementById('live-conn-status');
+        const btnConn = document.getElementById('btn-connect-live');
+        const btnDisc = document.getElementById('btn-disconnect-live');
+        const scenSel = document.getElementById('scenario-select');
+        if (state.mode === 'live') {
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-mint pulse-dot';
+          if (lbl) lbl.textContent = 'LIVE API';
+          if (badge) {
+            badge.textContent = 'CONNECTED LIVE';
+            badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-mint text-mint bg-carbon';
+          }
+          if (btnConn) btnConn.classList.add('hidden');
+          if (btnDisc) btnDisc.classList.remove('hidden');
+          if (scenSel) scenSel.disabled = true;
+        } else {
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-amberWarn';
+          if (lbl) lbl.textContent = 'Connect / IO';
+          if (badge) {
+            badge.textContent = 'SIMULATION MODE';
+            badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-olive text-amberWarn bg-carbon';
+          }
+          if (btnConn) btnConn.classList.remove('hidden');
+          if (btnDisc) btnDisc.classList.add('hidden');
+          if (scenSel) scenSel.disabled = false;
+        }
+      }
+
+      async function fetchLiveTelemetry() {
+        const errBox = document.getElementById('live-conn-error');
+        const base = state.liveConfig.baseUrl.replace(/\/+$/, '');
+        try {
+          const resp = await fetch(`${base}/api/admin/ops/telemetry`, {
+            method: 'GET',
+            headers: {
+              'x-admin-secret': state.liveConfig.secret,
+              'Accept': 'application/json'
+            }
+          });
+          if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+          }
+          const data = await resp.json();
+          state.liveConfig.consecutiveErrors = 0;
+          state.liveConfig.lastSyncAt = new Date();
+          state.lastProbe = new Date();
+          if (errBox) errBox.classList.add('hidden');
+
+          // Hydrate KPIs from real backend + frontend beacon telemetry
+          const m = state.metrics;
+          if (typeof data.beRpm === 'number') m.beRpm = data.beRpm;
+          if (typeof data.throttled429 === 'number') m.throttled429 = data.throttled429;
+          if (typeof data.p95 === 'number') m.p95 = data.p95;
+          if (typeof data.errPct === 'number') m.errPct = data.errPct;
+          if (typeof data.socketConnections === 'number') m.sockets = data.socketConnections;
+          if (typeof data.wsPct === 'number') m.wsPct = data.wsPct;
+          if (typeof data.cpuPct === 'number') m.cpu = data.cpuPct;
+          if (typeof data.memoryMb === 'number') m.memMb = data.memoryMb;
+          if (typeof data.dbPoolActive === 'number') m.dbPool = data.dbPoolActive;
+          if (typeof data.dbLatencyMs === 'number') m.dbLat = data.dbLatencyMs;
+          if (typeof data.eventLoopLagMs === 'number') m.evLoop = data.eventLoopLagMs;
+
+          if (data.frontend) {
+            if (typeof data.frontend.activeVisitors === 'number') m.visitors = data.frontend.activeVisitors;
+            if (typeof data.frontend.edgeRps === 'number') m.feRps = data.frontend.edgeRps;
+            if (typeof data.frontend.cacheHitPct === 'number') m.cacheHit = data.frontend.cacheHitPct;
+            if (typeof data.frontend.mobLcpSec === 'number') m.mobLcp = data.frontend.mobLcpSec;
+            if (typeof data.frontend.deskLcpSec === 'number') m.deskLcp = data.frontend.deskLcpSec;
+            if (Array.isArray(data.frontend.routes) && data.frontend.routes.length) {
+              const totalU = data.frontend.routes.reduce((a, r) => a + (r.users || 0), 0) || 1;
+              state.feRoutes = data.frontend.routes.map(r => ({
+                route: r.route,
+                label: r.label || r.route,
+                share: (r.users || 0) / totalU,
+                baseLoad: r.loadMs || 400
+              }));
+            }
+          }
+
+          if (Array.isArray(data.endpoints) && data.endpoints.length) {
+            state.endpoints = data.endpoints.map((ep, idx) => {
+              const parts = (ep.route || 'GET /').split(' ');
+              return {
+                id: 'live-ep-' + idx,
+                method: parts.length > 1 ? parts[0] : 'GET',
+                route: parts.length > 1 ? parts.slice(1).join(' ') : ep.route,
+                baseRpm: ep.rpm || 0,
+                baseP50: ep.p50 || 0,
+                baseP95: ep.p95 || 0,
+                baseErr: ep.errRate || 0,
+                group: 'live'
+              };
+            });
+          }
+
+          if (data.controls) {
+            ['extendedCacheTtl', 'renderKeepAlive', 'forcePollingFallback', 'pausePublicBallots', 'maintenanceBanner'].forEach(k => {
+              if (typeof data.controls[k] === 'boolean') state.controls[k] = data.controls[k];
+            });
+            if (data.controls.rateLimits) {
+              Object.keys(state.controls.rateLimits).forEach(k => {
+                if (typeof data.controls.rateLimits[k] === 'number') {
+                  state.controls.rateLimits[k].limit = data.controls.rateLimits[k];
+                }
+              });
+            }
+            if (data.controls.throttledRoutes && typeof data.controls.throttledRoutes === 'object') {
+              state.throttledEndpoints = { ...data.controls.throttledRoutes };
+            }
+          }
+
+          if (Array.isArray(data.recentLogs) && data.recentLogs.length) {
+            state.logs = data.recentLogs.slice(0, 80);
+          }
+
+          // Push real rolling chart point
+          const ts = formatTimeShort(new Date());
+          state.series.labels.push(ts);
+          state.series.feRps.push(m.feRps);
+          state.series.beRps.push(Number((m.beRpm / 60).toFixed(1)));
+          state.series.socketEps.push(typeof data.socketEps === 'number' ? data.socketEps : 0);
+          if (state.series.labels.length > 20) {
+            state.series.labels.shift();
+            state.series.feRps.shift();
+            state.series.beRps.shift();
+            state.series.socketEps.shift();
+          }
+
+          renderAll();
+          return true;
+        } catch (err) {
+          state.liveConfig.consecutiveErrors += 1;
+          if (errBox) {
+            errBox.textContent = `Live sync error (${state.liveConfig.consecutiveErrors}): ${err.message}. Check Render CORS_ORIGIN and ADMIN_SECRET_KEY.`;
+            errBox.classList.remove('hidden');
+          }
+          pushLog('BACKEND', 'ERROR', `Live telemetry poll failed: ${err.message}`);
+          renderLogs();
+          return false;
+        }
+      }
+
+      async function pushLiveControls() {
+        if (state.mode !== 'live') return;
+        const base = state.liveConfig.baseUrl.replace(/\/+$/, '');
+        const payload = {
+          extendedCacheTtl: state.controls.extendedCacheTtl,
+          renderKeepAlive: state.controls.renderKeepAlive,
+          forcePollingFallback: state.controls.forcePollingFallback,
+          pausePublicBallots: state.controls.pausePublicBallots,
+          maintenanceBanner: state.controls.maintenanceBanner,
+          rateLimits: {
+            auth: state.controls.rateLimits.auth.limit,
+            checkin: state.controls.rateLimits.checkin.limit,
+            pairing: state.controls.rateLimits.pairing.limit,
+            ballot: state.controls.rateLimits.ballot.limit
+          },
+          throttledRoutes: state.throttledEndpoints
+        };
+        try {
+          const resp = await fetch(`${base}/api/admin/ops/controls`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-secret': state.liveConfig.secret
+            },
+            body: JSON.stringify(payload)
+          });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          showToast('Live controls synced to Render');
+        } catch (err) {
+          showToast(`Control sync failed: ${err.message}`, 'error');
+        }
+      }
+
+      document.getElementById('btn-connect-live').addEventListener('click', async () => {
+        const url = document.getElementById('input-live-url').value.trim();
+        const secret = document.getElementById('input-admin-secret').value.trim();
+        const pollMs = Number(document.getElementById('select-poll-ms').value) || 3000;
+        if (!url || !secret) {
+          showToast('Enter both Backend URL and Admin Secret', 'warn');
+          return;
+        }
+        state.liveConfig.baseUrl = url;
+        state.liveConfig.secret = secret;
+        state.liveConfig.pollMs = pollMs;
+        try {
+          sessionStorage.setItem('axiom_ops_url', url);
+          sessionStorage.setItem('axiom_ops_secret', secret);
+          sessionStorage.setItem('axiom_ops_poll', String(pollMs));
+        } catch {}
+        state.mode = 'live';
+        state.live = true;
+        updateConnUi();
+        startLoop();
+        const ok = await fetchLiveTelemetry();
+        if (ok) {
+          pushAudit(`Connected live to ${url} (${pollMs / 1000}s polling)`);
+          modal.classList.add('hidden');
+          showToast('Connected to live Render telemetry');
+        }
+      });
+
+      document.getElementById('btn-disconnect-live').addEventListener('click', () => {
+        state.mode = 'sim';
+        try { sessionStorage.removeItem('axiom_ops_secret'); } catch {}
+        updateConnUi();
+        startLoop();
+        pushAudit('Disconnected from live backend; resumed simulation mode.');
+        showToast('Switched back to simulation mode');
+      });
+
+      // Hook live control sync onto toggles, sliders, and endpoint throttles
+      document.addEventListener('click', (e) => {
+        if (state.mode === 'live' && (e.target.closest('[data-toggle-control]') || e.target.closest('[data-throttle-ep]') || e.target.closest('#btn-reset-controls'))) {
+          pushLiveControls();
+        }
+      });
+      document.addEventListener('change', (e) => {
+        if (state.mode === 'live' && e.target.matches('[data-rate-key]')) {
+          pushLiveControls();
+        }
+      });
+
+      // Boot
+      initCharts();
+      updateConnUi();
+      renderAll();
+      let timerId = null;
+      function startLoop() {
+        if (timerId) clearInterval(timerId);
+        const interval = state.mode === 'live' ? state.liveConfig.pollMs : 2000;
+        timerId = setInterval(() => {
+          if (!state.live) return;
+          if (state.mode === 'live') {
+            fetchLiveTelemetry();
+          } else {
+            computeTick();
+            renderAll();
+          }
+        }, interval);
+      }
+      startLoop();
+
+      // Auto-connect on reload when hosted on ops.axiom4.online with a saved session secret
+      try {
+        const savedUrl = sessionStorage.getItem('axiom_ops_url');
+        const savedSecret = sessionStorage.getItem('axiom_ops_secret');
+        const savedPoll = Number(sessionStorage.getItem('axiom_ops_poll')) || 3000;
+        if (savedUrl) document.getElementById('input-live-url').value = savedUrl;
+        if (savedSecret && window.location.hostname.includes('axiom4.online')) {
+          state.liveConfig.baseUrl = savedUrl || state.liveConfig.baseUrl;
+          state.liveConfig.secret = savedSecret;
+          state.liveConfig.pollMs = savedPoll;
+          document.getElementById('input-admin-secret').value = savedSecret;
+          state.mode = 'live';
+          updateConnUi();
+          startLoop();
+          fetchLiveTelemetry();
+        }
+      } catch {}
+    })();
+  </script>
+</body>
+</html>
