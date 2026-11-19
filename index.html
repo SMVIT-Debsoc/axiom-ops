@@ -137,7 +137,7 @@
   <header class="sticky top-0 z-30 bg-obsidian border-b border-olive">
     <div class="max-w-7xl mx-auto px-3 sm:px-6">
       <div class="flex items-center justify-between h-14 gap-2 sm:gap-3">
-        <!-- Brand & Global Health Pill -->
+        <!-- Brand & Global Health Pill & Sim Badge -->
         <div class="flex items-center gap-2 sm:gap-3 min-w-0">
           <div class="flex items-center gap-2 shrink-0">
             <span class="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded bg-mint text-obsidian font-display-num text-lg sm:text-xl leading-none">A4</span>
@@ -146,9 +146,15 @@
               <div class="text-[10px] font-mono text-moss uppercase tracking-widest hidden sm:block">Frontend + Backend Traffic Control</div>
             </div>
           </div>
-          <div id="global-status-pill" class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-olive bg-carbon text-mint shrink-0">
+          <div id="global-status-pill" class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-olive bg-carbon text-mint shrink-0">
             <span id="global-status-dot" class="w-2 h-2 rounded-full bg-mint pulse-dot"></span>
             <span id="global-status-text">ALL SYSTEMS NOMINAL</span>
+          </div>
+          <!-- Prominent Non-Dismissible Simulation Badge (Shown whenever mode !== 'live') -->
+          <div id="sim-mode-badge" class="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded border border-amberWarn/60 bg-amberWarn/15 text-amberWarn font-mono text-[10px] sm:text-xs font-semibold tracking-wider shrink-0 uppercase">
+            <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amberWarn animate-pulse"></span>
+            <span class="hidden xs:inline">SIMULATION MODE — NOT LIVE</span>
+            <span class="xs:hidden">SIMULATION</span>
           </div>
         </div>
 
@@ -288,7 +294,7 @@
               <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-moss inline-block"></span>Socket.IO</span>
             </div>
           </div>
-          <div class="relative h-52 sm:h-64">
+          <div class="relative min-h-[240px] h-56 sm:h-64">
             <canvas id="chart-overview-traffic"></canvas>
           </div>
         </div>
@@ -344,7 +350,10 @@
         </div>
 
         <div class="panel p-4">
-          <div class="text-xs font-mono text-mutedMint uppercase">Mobile Core Web Vitals</div>
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-xs font-mono text-mutedMint uppercase">Mobile Core Web Vitals</div>
+            <span id="fe-cwv-status-pill" class="px-2 py-0.5 rounded text-[10px] font-mono border border-olive text-mint bg-carbon">CWV NOMINAL</span>
+          </div>
           <div class="mt-2 flex items-baseline gap-3">
             <span id="fe-mobile-score" class="font-display-num text-4xl text-amberWarn">89</span>
             <span class="text-xs font-mono text-sage">Hero: shiva-music-sm.webp</span>
@@ -385,7 +394,7 @@
             <h2 class="font-display-num text-xl tracking-wider text-alabaster">TRAFFIC BY FRONTEND ROUTE</h2>
             <p class="text-xs text-mutedMint">Active sessions & requests across React Router paths (Vercel Analytics)</p>
           </div>
-          <div class="relative h-52 sm:h-64">
+          <div class="relative min-h-[260px] h-64 sm:h-72">
             <canvas id="chart-fe-routes"></canvas>
           </div>
         </div>
@@ -470,7 +479,7 @@
             <h2 class="font-display-num text-xl tracking-wider text-alabaster">API ENDPOINT LATENCY (p50 vs p95 ms)</h2>
             <p class="text-xs text-mutedMint">Express routes from Axiom26 backend (Docker HEALTHCHECK + Prisma queries)</p>
           </div>
-          <div class="relative h-64">
+          <div class="relative min-h-[260px] h-64 sm:h-72">
             <canvas id="chart-be-latency"></canvas>
           </div>
         </div>
@@ -480,7 +489,7 @@
             <h2 class="font-display-num text-xl tracking-wider text-alabaster">SOCKET.IO EVENT MIX</h2>
             <p class="text-xs text-mutedMint">Real-time tournament broadcasts/min</p>
           </div>
-          <div class="relative h-52 sm:h-64">
+          <div class="relative min-h-[240px] h-56 sm:h-64 flex items-center justify-center">
             <canvas id="chart-be-sockets"></canvas>
           </div>
         </div>
@@ -601,19 +610,19 @@
         <button id="btn-close-io" type="button" class="btn-outline px-2.5 py-1 rounded text-xs font-mono">ESC</button>
       </div>
 
-      <!-- Live Production Connection (ops.axiom4.online -> Render) -->
+      <!-- Live Production Connection (Secure Serverless Vercel Proxy) -->
       <div class="panel-inset p-3 sm:p-3.5 space-y-3 border-mint/40">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div class="text-xs font-mono text-mint uppercase font-semibold">Live Production Stream (Render + Vercel Beacon)</div>
-            <p class="text-[11px] text-mutedMint">Connect directly to your Axiom26 backend to stream real-time metrics and push live traffic controls.</p>
+            <div class="text-xs font-mono text-mint uppercase font-semibold">Live Production Stream (Vercel Proxy → Render Backend)</div>
+            <p class="text-[11px] text-mutedMint">Telemetry is securely proxied server-side via <code class="text-mint">/api/ops/telemetry</code>. No secrets are stored or exposed in the browser.</p>
           </div>
           <span id="live-conn-status" class="px-2 py-0.5 rounded text-[10px] font-mono border border-olive text-amberWarn bg-carbon">SIMULATION MODE</span>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div class="sm:col-span-2">
-            <label for="input-live-url" class="block text-[10px] font-mono text-moss uppercase mb-1">Backend Base URL</label>
-            <input id="input-live-url" type="url" value="https://axiom26-aezg.onrender.com" placeholder="https://axiom26-aezg.onrender.com" class="w-full bg-carbon border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster focus:outline-none focus:border-mint" />
+            <label for="input-live-proxy" class="block text-[10px] font-mono text-moss uppercase mb-1">Serverless Telemetry Proxy Endpoint</label>
+            <input id="input-live-proxy" type="text" value="/api/ops/telemetry" readonly class="w-full bg-carbon border border-olive rounded px-2.5 py-1.5 text-xs font-mono text-alabaster focus:outline-none focus:border-mint opacity-80 cursor-not-allowed" />
           </div>
           <div>
             <label for="select-poll-ms" class="block text-[10px] font-mono text-moss uppercase mb-1">Poll Interval</label>
@@ -624,25 +633,15 @@
             </select>
           </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
-          <div class="sm:col-span-2">
-            <div class="flex items-center justify-between mb-1">
-              <label for="input-admin-secret" class="block text-[10px] font-mono text-moss uppercase">Admin Secret (x-admin-secret)</label>
-              <span id="saved-key-indicator" class="hidden text-[10px] font-mono text-mint">✓ Saved on device</span>
-            </div>
-            <div class="relative">
-              <input id="input-admin-secret" type="password" placeholder="Enter ADMIN_SECRET_KEY from Render" class="w-full bg-carbon border border-olive rounded px-2.5 py-1.5 pr-8 text-xs font-mono text-alabaster focus:outline-none focus:border-mint" />
-              <button type="button" id="btn-toggle-secret-visibility" class="absolute right-2 top-1/2 -translate-y-1/2 text-moss hover:text-mint p-1 text-xs" title="Toggle password visibility">
-                👁
-              </button>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <div class="text-[11px] font-mono text-moss" id="live-proxy-note">
+            Proxy status: <span id="live-proxy-status-text" class="text-amberWarn">Polling /api/ops/telemetry</span>
           </div>
-          <div class="flex gap-2 w-full">
-            <button id="btn-connect-live" type="button" class="btn-mint flex-1 px-3 py-2 rounded text-xs font-mono font-medium">Connect Live</button>
-            <button id="btn-disconnect-live" type="button" class="hidden btn-outline flex-1 px-3 py-2 rounded text-xs font-mono text-roseSoft border-roseSoft/60 font-medium">Disconnect</button>
+          <div class="flex gap-2">
+            <button id="btn-sync-now" type="button" class="btn-mint px-3 py-1.5 rounded text-xs font-mono font-medium">Sync Now</button>
           </div>
         </div>
-        <div id="live-conn-error" class="hidden text-[11px] font-mono text-roseSoft bg-crimson/20 border border-roseSoft/40 rounded px-2.5 py-1.5"></div>
+        <div id="live-conn-error" class="hidden text-[11px] font-mono text-roseSoft bg-crimson/20 border border-roseSoft/40 rounded px-2.5 py-1.5 leading-relaxed"></div>
       </div>
 
       <!-- Import / Export Section -->
@@ -818,12 +817,12 @@ if (typeof PerformanceObserver !== "undefined") {
           { id: 'leaderboard', method: 'GET', route: '/api/stats/leaderboard', baseRpm: 52, baseP50: 62, baseP95: 158, baseErr: 0.08, group: 'ballot' }
         ],
         feRoutes: [
-          { route: '/', label: 'Landing Page', share: 0.26, baseLoad: 640 },
-          { route: '/dashboard', label: 'Participant Desk', share: 0.24, baseLoad: 420 },
-          { route: '/checkin', label: 'Venue QR Check-In', share: 0.18, baseLoad: 380 },
-          { route: '/admin/live', label: 'Organiser Live Console', share: 0.14, baseLoad: 510 },
-          { route: '/ballot/:token', label: 'Adjudicator Ballot', share: 0.11, baseLoad: 350 },
-          { route: '/dashboard/results', label: 'Leaderboard & Results', share: 0.07, baseLoad: 460 }
+          { route: '/', label: 'Landing Page', users: 29, share: 0.26, baseLoad: 640 },
+          { route: '/dashboard', label: 'Participant Desk', users: 27, share: 0.24, baseLoad: 420 },
+          { route: '/checkin', label: 'Venue QR Check-In', users: 20, share: 0.18, baseLoad: 380 },
+          { route: '/admin/live', label: 'Organiser Live Console', users: 16, share: 0.14, baseLoad: 510 },
+          { route: '/ballot/:token', label: 'Adjudicator Ballot', users: 12, share: 0.11, baseLoad: 350 },
+          { route: '/dashboard/results', label: 'Leaderboard & Results', users: 8, share: 0.07, baseLoad: 460 }
         ],
         alerts: [],
         logs: [],
@@ -921,7 +920,7 @@ if (typeof PerformanceObserver !== "undefined") {
         const maintFactor = c.maintenanceBanner ? 0.72 : 1.0;
         const keepAliveColdBonus = (state.scenario === 'coldstart' && c.renderKeepAlive) ? 0.45 : 1.0;
 
-        // Check rate limiting shed
+        // Check rate limiting shed (tightly coupled with NeonDB pool capacity)
         const avgLimit = (
           c.rateLimits.auth.limit +
           c.rateLimits.checkin.limit +
@@ -930,16 +929,25 @@ if (typeof PerformanceObserver !== "undefined") {
         ) / 4;
         const limitTightness = avgLimit < 90 ? (avgLimit / 90) : 1.0;
         const rawBeRpm = base.beRpm * cacheFactor * ballotFactor * maintFactor;
-        const effectiveBeRpm = Math.round(jitter(rawBeRpm * limitTightness, rawBeRpm * 0.06));
-        const throttled429 = Math.max(0, Math.round(rawBeRpm - effectiveBeRpm));
 
-        const loadRatio = Math.max(0.4, effectiveBeRpm / 420);
         const p95Base = base.p95 * keepAliveColdBonus * (c.extendedCacheTtl ? 0.82 : 1.0) * (limitTightness < 1 ? 0.78 : 1.0);
         const p95 = Math.max(32, Math.round(jitter(p95Base, p95Base * 0.08)));
 
         const dbPoolBase = Math.min(20, Math.max(2, Math.round(base.dbPool * cacheFactor * limitTightness * maintFactor)));
         const dbPool = Math.min(20, Math.max(1, Math.round(jitter(dbPoolBase, 1))));
+        const dbPoolRatio = dbPool / 20;
         const dbLat = Math.max(10, Math.round(jitter(base.dbLat * (dbPool / Math.max(1, base.dbPool)), 8)));
+
+        // Unify 429 rate limit counter: only shed HTTP 429 when NeonDB pool >= 80% (16/20) AND limits are tight
+        let throttled429 = 0;
+        if (dbPoolRatio >= 0.80 && limitTightness < 1.0) {
+          throttled429 = Math.max(1, Math.round(rawBeRpm * (1 - limitTightness)));
+        } else if (dbPoolRatio >= 0.85 && (state.scenario === 'dbpressure' || state.scenario === 'draw')) {
+          throttled429 = Math.max(1, Math.round(rawBeRpm * 0.08));
+        } else {
+          throttled429 = 0;
+        }
+        const effectiveBeRpm = Math.max(1, Math.round(rawBeRpm - throttled429));
 
         const cpu = Math.min(99, Math.max(12, Math.round(jitter(base.cpu * cacheFactor * limitTightness * maintFactor, 4))));
         const memMb = Math.min(500, Math.max(140, Math.round(jitter(base.memMb * (c.extendedCacheTtl ? 0.94 : 1.0), 10))));
@@ -988,11 +996,11 @@ if (typeof PerformanceObserver !== "undefined") {
           upsertAlert('mob-lcp', 'warn', 'FRONTEND', 'Mobile LCP Above 3.5s Threshold', `Mobile LCP measured at ${state.metrics.mobLcp}s on /brand/shiva-music-sm.webp.`);
         }
 
-        // Periodic log generation
+        // Periodic log generation: strictly aligned with state.metrics.throttled429
         state.tickCount += 1;
         if (state.tickCount % 2 === 0) {
-          if (throttled429 > 0) {
-            pushLog('BACKEND', 'WARN', `Rate limiter shed ${throttled429} req/min (HTTP 429) to protect NeonDB pool`);
+          if (state.metrics.throttled429 > 0 && (state.metrics.dbPool / 20) >= 0.80) {
+            pushLog('BACKEND', 'WARN', `Rate limiter shed ${state.metrics.throttled429} req/min (HTTP 429) to protect NeonDB pool`);
           } else if (p95 > 500) {
             pushLog('BACKEND', 'ERROR', `Slow response on GET /api/rounds/event/:id — p95 ${p95}ms (DB pool ${dbPool}/20)`);
           } else if (state.tickCount % 4 === 0) {
@@ -1004,14 +1012,25 @@ if (typeof PerformanceObserver !== "undefined") {
       }
 
       // ============================================================
-      // CHARTS INITIALIZATION
+      // CHARTS INITIALIZATION (Animation Disabled to Prevent Mid-Animation Glitches)
       // ============================================================
       Chart.defaults.color = '#BDD9CA';
       Chart.defaults.borderColor = 'rgba(74, 86, 70, 0.45)';
       Chart.defaults.font.family = "'JetBrains Mono', monospace";
       Chart.defaults.font.size = 11;
+      Chart.defaults.animation = false;
 
       const charts = {};
+
+      function getRouteUserCounts() {
+        if (state.mode === 'live' && state.feRoutes.every(r => typeof r.users === 'number')) {
+          return state.feRoutes.map(r => r.users);
+        }
+        if (state.scenario === 'normal') {
+          return [29, 27, 20, 16, 12, 8];
+        }
+        return state.feRoutes.map(r => Math.max(2, Math.round(state.metrics.visitors * r.share)));
+      }
 
       function initCharts() {
         const ctxOverview = document.getElementById('chart-overview-traffic').getContext('2d');
@@ -1028,7 +1047,7 @@ if (typeof PerformanceObserver !== "undefined") {
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 250 },
+            animation: false,
             plugins: { legend: { display: false } },
             scales: {
               x: { grid: { display: false } },
@@ -1038,23 +1057,49 @@ if (typeof PerformanceObserver !== "undefined") {
         });
 
         const ctxFeRoutes = document.getElementById('chart-fe-routes').getContext('2d');
+        const initialCounts = getRouteUserCounts();
+        const maxInitialCount = Math.max(...initialCounts, 30);
         charts.feRoutes = new Chart(ctxFeRoutes, {
           type: 'bar',
           data: {
             labels: state.feRoutes.map(r => r.route),
             datasets: [{
               label: 'Active Users',
-              data: state.feRoutes.map(r => Math.round(state.metrics.visitors * r.share)),
+              data: initialCounts,
               backgroundColor: '#B9F5D8',
-              borderRadius: 3
+              borderRadius: 4,
+              barThickness: 16,
+              maxBarThickness: 20
             }]
           },
           options: {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { x: { beginAtZero: true }, y: { grid: { display: false } } }
+            animation: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => ` ${ctx.raw} active users`
+                }
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                suggestedMax: Math.ceil(maxInitialCount * 1.15),
+                grid: { color: 'rgba(74, 86, 70, 0.25)' },
+                ticks: { precision: 0 }
+              },
+              y: {
+                grid: { display: false },
+                ticks: {
+                  font: { family: "'JetBrains Mono', monospace", size: 11 },
+                  autoSkip: false
+                }
+              }
+            }
           }
         });
 
@@ -1064,15 +1109,21 @@ if (typeof PerformanceObserver !== "undefined") {
           data: {
             labels: state.endpoints.map(e => e.route.replace('/api/', '/')),
             datasets: [
-              { label: 'p50 (ms)', data: state.endpoints.map(e => e.baseP50), backgroundColor: '#6B8F71', borderRadius: 2 },
-              { label: 'p95 (ms)', data: state.endpoints.map(e => e.baseP95), backgroundColor: '#B9F5D8', borderRadius: 2 }
+              { label: 'p50 (ms)', data: state.endpoints.map(e => e.baseP50), backgroundColor: '#6B8F71', borderRadius: 3, maxBarThickness: 24 },
+              { label: 'p95 (ms)', data: state.endpoints.map(e => e.baseP95), backgroundColor: '#B9F5D8', borderRadius: 3, maxBarThickness: 24 }
             ]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { position: 'top', align: 'end' } },
-            scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
+            animation: false,
+            plugins: {
+              legend: { position: 'top', align: 'end', labels: { boxWidth: 10, padding: 8 } }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+              y: { beginAtZero: true, grid: { color: 'rgba(74, 86, 70, 0.25)' } }
+            }
           }
         });
 
@@ -1091,9 +1142,10 @@ if (typeof PerformanceObserver !== "undefined") {
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             cutout: '62%',
             plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10 } }
+              legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 } } }
             }
           }
         });
@@ -1118,18 +1170,26 @@ if (typeof PerformanceObserver !== "undefined") {
       function renderAll() {
         const m = state.metrics;
         const openAlerts = state.alerts.filter(a => a.status !== 'resolved');
-        const hasCritical = openAlerts.some(a => a.severity === 'critical') || m.p95 > 900 || m.dbPool >= 18;
-        const hasWarn = openAlerts.length > 0 || m.p95 > 400 || m.cpu > 75;
+
+        // Decouple Global Status Banner: Evaluate ONLY backend/infra health
+        const apiP95 = m.p95 || 0;
+        const errorRate5xx = (m.errPct || 0) / 100;
+        const eventLoopLag = m.evLoop || 0;
+        const dbPoolRatio = (m.dbPool || 0) / 20;
+        const probeFailed = Boolean(state.healthProbeFailed);
+
+        const isDegraded = apiP95 > 1000 || errorRate5xx > 0.05 || probeFailed;
+        const isElevated = !isDegraded && (apiP95 > 400 || errorRate5xx > 0.01 || eventLoopLag > 50 || dbPoolRatio > 0.85);
 
         // Global status pill
         const dot = document.getElementById('global-status-dot');
         const txt = document.getElementById('global-status-text');
         const pill = document.getElementById('global-status-pill');
-        if (hasCritical) {
+        if (isDegraded) {
           dot.className = 'w-2 h-2 rounded-full bg-roseSoft pulse-dot';
-          txt.textContent = 'INCIDENT ACTIVE';
+          txt.textContent = 'SYSTEM DEGRADED';
           pill.className = 'hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-roseSoft bg-crimson/30 text-roseSoft';
-        } else if (hasWarn) {
+        } else if (isElevated) {
           dot.className = 'w-2 h-2 rounded-full bg-amberWarn pulse-dot';
           txt.textContent = 'ELEVATED LOAD';
           pill.className = 'hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border border-amberWarn/60 bg-carbon text-amberWarn';
@@ -1236,17 +1296,28 @@ if (typeof PerformanceObserver !== "undefined") {
           `;
         }).join('');
 
-        // Frontend View Metrics
+        // Frontend View Metrics & Dedicated CWV Status Pill
+        const cwvPill = document.getElementById('fe-cwv-status-pill');
+        if (cwvPill) {
+          if (m.mobLcp > 2.5) {
+            cwvPill.textContent = 'LCP > 2.5s (SLOW)';
+            cwvPill.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-amberWarn text-amberWarn bg-carbon';
+          } else {
+            cwvPill.textContent = 'CWV NOMINAL';
+            cwvPill.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-olive text-mint bg-carbon';
+          }
+        }
         document.getElementById('fe-desk-lcp').textContent = `${m.deskLcp}s`;
         document.getElementById('fe-mob-lcp').textContent = `${m.mobLcp}s`;
-        document.getElementById('fe-mob-lcp').className = `text-sm font-mono font-semibold ${m.mobLcp > 3.5 ? 'text-roseSoft' : 'text-amberWarn'}`;
+        document.getElementById('fe-mob-lcp').className = `text-sm font-mono font-semibold ${m.mobLcp > 2.5 ? 'text-amberWarn' : 'text-mint'}`;
         document.getElementById('fe-mobile-score').textContent = m.mobScore;
         document.getElementById('fe-cache-hit').textContent = `${m.cacheHit}%`;
         document.getElementById('fe-cache-ttl-label').textContent = state.controls.extendedCacheTtl ? 'TTL: 60s (Extended)' : 'TTL: 20s (api.js default)';
         document.getElementById('fe-dedupe-saved').textContent = `${Math.round(m.beRpm * 0.32)} req/min saved`;
 
-        document.getElementById('fe-routes-table').innerHTML = state.feRoutes.map(r => {
-          const users = Math.max(2, Math.round(m.visitors * r.share));
+        const routeCounts = getRouteUserCounts();
+        document.getElementById('fe-routes-table').innerHTML = state.feRoutes.map((r, i) => {
+          const users = routeCounts[i] !== undefined ? routeCounts[i] : Math.max(2, Math.round(m.visitors * r.share));
           const loadMs = Math.round(r.baseLoad * (m.p95 / 138));
           const ok = loadMs < 900;
           return `
@@ -1309,7 +1380,12 @@ if (typeof PerformanceObserver !== "undefined") {
         charts.overview.data.datasets[2].data = state.series.socketEps;
         charts.overview.update('none');
 
-        charts.feRoutes.data.datasets[0].data = state.feRoutes.map(r => Math.max(2, Math.round(m.visitors * r.share)));
+        charts.feRoutes.data.labels = state.feRoutes.map(r => r.route);
+        charts.feRoutes.data.datasets[0].data = routeCounts;
+        if (charts.feRoutes.options.scales.x) {
+          const maxCount = Math.max(...routeCounts, 30);
+          charts.feRoutes.options.scales.x.suggestedMax = Math.ceil(maxCount * 1.15);
+        }
         charts.feRoutes.update('none');
 
         const allEps = getEndpointSnapshot();
@@ -1455,10 +1531,40 @@ if (typeof PerformanceObserver !== "undefined") {
           btn.classList.toggle('active', btn.dataset.tab === tab);
         });
         ['overview', 'frontend', 'backend', 'traffic', 'logs'].forEach(v => {
-          document.getElementById(`view-${v}`).classList.toggle('hidden', v !== tab);
+          const el = document.getElementById(`view-${v}`);
+          if (el) el.classList.toggle('hidden', v !== tab);
         });
-        // Resize charts when becoming visible
-        Object.values(charts).forEach(ch => ch && ch.resize());
+        // Remeasure charts after layout reflow to eliminate mid-animation / 0-dimension compression
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            Object.values(charts).forEach(ch => {
+              if (ch) {
+                ch.resize();
+                ch.update('none');
+              }
+            });
+          });
+        });
+      }
+
+      if (typeof ResizeObserver !== 'undefined') {
+        const chartResizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+              const cv = entry.target.querySelector('canvas');
+              if (cv) {
+                const ch = Object.values(charts).find(c => c && c.canvas === cv);
+                if (ch) {
+                  ch.resize();
+                  ch.update('none');
+                }
+              }
+            }
+          }
+        });
+        document.querySelectorAll('.panel canvas').forEach(cv => {
+          if (cv.parentElement) chartResizeObserver.observe(cv.parentElement);
+        });
       }
 
       document.querySelectorAll('[data-tab]').forEach(btn => {
@@ -1714,17 +1820,17 @@ if (typeof PerformanceObserver !== "undefined") {
       });
 
       // ============================================================
-      // LIVE PRODUCTION POLLING & CONTROL SYNC (ops.axiom4.online)
+      // ============================================================
+      // LIVE PRODUCTION POLLING VIA VERCEL SERVERLESS PROXY
       // ============================================================
       function updateConnUi() {
         const dot = document.getElementById('conn-mode-dot');
         const lbl = document.getElementById('conn-mode-label');
         const lblMob = document.getElementById('conn-mode-label-mobile');
         const badge = document.getElementById('live-conn-status');
-        const btnConn = document.getElementById('btn-connect-live');
-        const btnDisc = document.getElementById('btn-disconnect-live');
+        const simBadge = document.getElementById('sim-mode-badge');
         const scenSel = document.getElementById('scenario-select');
-        const keyIndicator = document.getElementById('saved-key-indicator');
+
         if (state.mode === 'live') {
           if (dot) dot.className = 'w-2 h-2 rounded-full bg-mint pulse-dot';
           if (lbl) lbl.textContent = 'LIVE API';
@@ -1733,286 +1839,198 @@ if (typeof PerformanceObserver !== "undefined") {
             badge.textContent = 'CONNECTED LIVE';
             badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-mint text-mint bg-carbon';
           }
-          if (btnConn) btnConn.classList.add('hidden');
-          if (btnDisc) btnDisc.classList.remove('hidden');
+          if (simBadge) simBadge.classList.add('hidden');
           if (scenSel) scenSel.disabled = true;
-          if (keyIndicator) keyIndicator.classList.remove('hidden');
         } else {
           if (dot) dot.className = 'w-2 h-2 rounded-full bg-amberWarn';
           if (lbl) lbl.textContent = 'Connect / IO';
           if (lblMob) lblMob.textContent = 'IO';
           if (badge) {
             badge.textContent = 'SIMULATION MODE';
-            badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-olive text-amberWarn bg-carbon';
+            badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono border border-amberWarn/60 text-amberWarn bg-carbon';
           }
-          if (btnConn) btnConn.classList.remove('hidden');
-          if (btnDisc) btnDisc.classList.add('hidden');
+          if (simBadge) simBadge.classList.remove('hidden');
           if (scenSel) scenSel.disabled = false;
+        }
+      }
+
+      function hydrateLiveData(data) {
+        const m = state.metrics;
+        if (typeof data.beRpm === 'number') m.beRpm = data.beRpm;
+        if (typeof data.throttled429 === 'number') m.throttled429 = data.throttled429;
+        if (typeof data.p95 === 'number') m.p95 = data.p95;
+        if (typeof data.errPct === 'number') m.errPct = data.errPct;
+        if (typeof data.socketConnections === 'number') m.sockets = data.socketConnections;
+        if (typeof data.wsPct === 'number') m.wsPct = data.wsPct;
+        if (typeof data.cpuPct === 'number') m.cpu = data.cpuPct;
+        if (typeof data.memoryMb === 'number') m.memMb = data.memoryMb;
+        if (typeof data.dbPoolActive === 'number') m.dbPool = data.dbPoolActive;
+        if (typeof data.dbLatencyMs === 'number') m.dbLat = data.dbLatencyMs;
+        if (typeof data.eventLoopLagMs === 'number') m.evLoop = data.eventLoopLagMs;
+
+        if (data.frontend) {
+          if (typeof data.frontend.activeVisitors === 'number') m.visitors = data.frontend.activeVisitors;
+          if (typeof data.frontend.edgeRps === 'number') m.feRps = data.frontend.edgeRps;
+          if (typeof data.frontend.cacheHitPct === 'number') m.cacheHit = data.frontend.cacheHitPct;
+          if (typeof data.frontend.mobLcpSec === 'number') m.mobLcp = data.frontend.mobLcpSec;
+          if (typeof data.frontend.deskLcpSec === 'number') m.deskLcp = data.frontend.deskLcpSec;
+          if (Array.isArray(data.frontend.routes) && data.frontend.routes.length) {
+            const totalU = data.frontend.routes.reduce((a, r) => a + (r.users || 0), 0) || 1;
+            state.feRoutes = data.frontend.routes.map(r => ({
+              route: r.route,
+              label: r.label || r.route,
+              users: r.users || 0,
+              share: (r.users || 0) / totalU,
+              baseLoad: r.loadMs || 400
+            }));
+          }
+        }
+
+        if (Array.isArray(data.endpoints) && data.endpoints.length) {
+          state.endpoints = data.endpoints.map((ep, idx) => {
+            const parts = (ep.route || 'GET /').split(' ');
+            return {
+              id: 'live-ep-' + idx,
+              method: parts.length > 1 ? parts[0] : 'GET',
+              route: parts.length > 1 ? parts.slice(1).join(' ') : ep.route,
+              baseRpm: ep.rpm || 0,
+              baseP50: ep.p50 || 0,
+              baseP95: ep.p95 || 0,
+              baseErr: ep.errRate || 0,
+              group: 'live'
+            };
+          });
+        }
+
+        if (Array.isArray(data.recentLogs) && data.recentLogs.length) {
+          state.logs = data.recentLogs
+            .filter(l => !(l.message && l.message.includes('429') && m.throttled429 === 0))
+            .slice(0, 80);
+        }
+
+        const ts = formatTimeShort(new Date());
+        state.series.labels.push(ts);
+        state.series.feRps.push(m.feRps);
+        state.series.beRps.push(Number((m.beRpm / 60).toFixed(1)));
+        state.series.socketEps.push(typeof data.socketEps === 'number' ? data.socketEps : 0);
+        if (state.series.labels.length > 20) {
+          state.series.labels.shift();
+          state.series.feRps.shift();
+          state.series.beRps.shift();
+          state.series.socketEps.shift();
         }
       }
 
       async function fetchLiveTelemetry() {
         const errBox = document.getElementById('live-conn-error');
-        const base = state.liveConfig.baseUrl.replace(/\/+$/, '');
+        const proxyStatusText = document.getElementById('live-proxy-status-text');
+
         try {
-          const resp = await fetch(`${base}/api/admin/ops/telemetry`, {
+          const resp = await fetch('/api/ops/telemetry', {
             method: 'GET',
-            headers: {
-              'x-admin-secret': state.liveConfig.secret,
-              'Accept': 'application/json'
-            }
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store'
           });
+
           if (!resp.ok) {
-            throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+            throw new Error(`Proxy HTTP ${resp.status} ${resp.statusText}`);
           }
-          const data = await resp.json();
-          state.liveConfig.consecutiveErrors = 0;
-          state.liveConfig.lastSyncAt = new Date();
-          state.lastProbe = new Date();
-          if (errBox) errBox.classList.add('hidden');
 
-          // Hydrate KPIs from real backend + frontend beacon telemetry
-          const m = state.metrics;
-          if (typeof data.beRpm === 'number') m.beRpm = data.beRpm;
-          if (typeof data.throttled429 === 'number') m.throttled429 = data.throttled429;
-          if (typeof data.p95 === 'number') m.p95 = data.p95;
-          if (typeof data.errPct === 'number') m.errPct = data.errPct;
-          if (typeof data.socketConnections === 'number') m.sockets = data.socketConnections;
-          if (typeof data.wsPct === 'number') m.wsPct = data.wsPct;
-          if (typeof data.cpuPct === 'number') m.cpu = data.cpuPct;
-          if (typeof data.memoryMb === 'number') m.memMb = data.memoryMb;
-          if (typeof data.dbPoolActive === 'number') m.dbPool = data.dbPoolActive;
-          if (typeof data.dbLatencyMs === 'number') m.dbLat = data.dbLatencyMs;
-          if (typeof data.eventLoopLagMs === 'number') m.evLoop = data.eventLoopLagMs;
+          const resJson = await resp.json();
 
-          if (data.frontend) {
-            if (typeof data.frontend.activeVisitors === 'number') m.visitors = data.frontend.activeVisitors;
-            if (typeof data.frontend.edgeRps === 'number') m.feRps = data.frontend.edgeRps;
-            if (typeof data.frontend.cacheHitPct === 'number') m.cacheHit = data.frontend.cacheHitPct;
-            if (typeof data.frontend.mobLcpSec === 'number') m.mobLcp = data.frontend.mobLcpSec;
-            if (typeof data.frontend.deskLcpSec === 'number') m.deskLcp = data.frontend.deskLcpSec;
-            if (Array.isArray(data.frontend.routes) && data.frontend.routes.length) {
-              const totalU = data.frontend.routes.reduce((a, r) => a + (r.users || 0), 0) || 1;
-              state.feRoutes = data.frontend.routes.map(r => ({
-                route: r.route,
-                label: r.label || r.route,
-                share: (r.users || 0) / totalU,
-                baseLoad: r.loadMs || 400
-              }));
+          if (resJson.mode === 'live' && resJson.data) {
+            state.mode = 'live';
+            state.liveConfig.consecutiveErrors = 0;
+            state.liveConfig.lastSyncAt = new Date();
+            state.lastProbe = new Date();
+            state.healthProbeFailed = false;
+            if (errBox) errBox.classList.add('hidden');
+            if (proxyStatusText) {
+              proxyStatusText.textContent = 'Live telemetry streaming from Render backend';
+              proxyStatusText.className = 'text-mint font-semibold';
             }
-          }
-
-          if (Array.isArray(data.endpoints) && data.endpoints.length) {
-            state.endpoints = data.endpoints.map((ep, idx) => {
-              const parts = (ep.route || 'GET /').split(' ');
-              return {
-                id: 'live-ep-' + idx,
-                method: parts.length > 1 ? parts[0] : 'GET',
-                route: parts.length > 1 ? parts.slice(1).join(' ') : ep.route,
-                baseRpm: ep.rpm || 0,
-                baseP50: ep.p50 || 0,
-                baseP95: ep.p95 || 0,
-                baseErr: ep.errRate || 0,
-                group: 'live'
-              };
-            });
-          }
-
-          if (data.controls) {
-            ['extendedCacheTtl', 'renderKeepAlive', 'forcePollingFallback', 'pausePublicBallots', 'maintenanceBanner'].forEach(k => {
-              if (typeof data.controls[k] === 'boolean') state.controls[k] = data.controls[k];
-            });
-            if (data.controls.rateLimits) {
-              Object.keys(state.controls.rateLimits).forEach(k => {
-                if (typeof data.controls.rateLimits[k] === 'number') {
-                  state.controls.rateLimits[k].limit = data.controls.rateLimits[k];
-                }
-              });
+            hydrateLiveData(resJson.data);
+            updateConnUi();
+            renderAll();
+            return true;
+          } else {
+            state.mode = 'sim';
+            state.healthProbeFailed = false;
+            const reason = resJson.reason || 'Telemetry proxy fallback active';
+            if (proxyStatusText) {
+              proxyStatusText.textContent = `Simulation mode: ${reason}`;
+              proxyStatusText.className = 'text-amberWarn';
             }
-            if (data.controls.throttledRoutes && typeof data.controls.throttledRoutes === 'object') {
-              state.throttledEndpoints = { ...data.controls.throttledRoutes };
+            if (errBox) {
+              errBox.textContent = `Notice: ${reason}. Showing simulated telemetry. To enable live data streaming, configure AXIOM_ADMIN_SECRET in Vercel Project Settings → Environment Variables.`;
+              errBox.classList.remove('hidden');
             }
+            updateConnUi();
+            computeTick();
+            renderAll();
+            return true;
           }
-
-          if (Array.isArray(data.recentLogs) && data.recentLogs.length) {
-            state.logs = data.recentLogs.slice(0, 80);
-          }
-
-          // Push real rolling chart point
-          const ts = formatTimeShort(new Date());
-          state.series.labels.push(ts);
-          state.series.feRps.push(m.feRps);
-          state.series.beRps.push(Number((m.beRpm / 60).toFixed(1)));
-          state.series.socketEps.push(typeof data.socketEps === 'number' ? data.socketEps : 0);
-          if (state.series.labels.length > 20) {
-            state.series.labels.shift();
-            state.series.feRps.shift();
-            state.series.beRps.shift();
-            state.series.socketEps.shift();
-          }
-
-          renderAll();
-          return true;
         } catch (err) {
-          state.liveConfig.consecutiveErrors += 1;
+          state.mode = 'sim';
+          state.healthProbeFailed = true;
+          if (proxyStatusText) {
+            proxyStatusText.textContent = `Proxy connection failed: ${err.message}`;
+            proxyStatusText.className = 'text-roseSoft';
+          }
           if (errBox) {
-            errBox.textContent = `Live sync error (${state.liveConfig.consecutiveErrors}): ${err.message}. Check Render CORS_ORIGIN and ADMIN_SECRET_KEY.`;
+            errBox.textContent = `Proxy request failed: ${err.message}. Showing simulated telemetry.`;
             errBox.classList.remove('hidden');
           }
-          pushLog('BACKEND', 'ERROR', `Live telemetry poll failed: ${err.message}`);
-          renderLogs();
+          updateConnUi();
+          computeTick();
+          renderAll();
           return false;
         }
       }
 
-      async function pushLiveControls() {
-        if (state.mode !== 'live') return;
-        const base = state.liveConfig.baseUrl.replace(/\/+$/, '');
-        const payload = {
-          extendedCacheTtl: state.controls.extendedCacheTtl,
-          renderKeepAlive: state.controls.renderKeepAlive,
-          forcePollingFallback: state.controls.forcePollingFallback,
-          pausePublicBallots: state.controls.pausePublicBallots,
-          maintenanceBanner: state.controls.maintenanceBanner,
-          rateLimits: {
-            auth: state.controls.rateLimits.auth.limit,
-            checkin: state.controls.rateLimits.checkin.limit,
-            pairing: state.controls.rateLimits.pairing.limit,
-            ballot: state.controls.rateLimits.ballot.limit
-          },
-          throttledRoutes: state.throttledEndpoints
-        };
-        try {
-          const resp = await fetch(`${base}/api/admin/ops/controls`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-secret': state.liveConfig.secret
-            },
-            body: JSON.stringify(payload)
-          });
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          showToast('Live controls synced to Render');
-        } catch (err) {
-          showToast(`Control sync failed: ${err.message}`, 'error');
-        }
-      }
-
-      // Toggle password visibility on admin secret input
-      const btnToggleSecret = document.getElementById('btn-toggle-secret-visibility');
-      if (btnToggleSecret) {
-        btnToggleSecret.addEventListener('click', () => {
-          const inp = document.getElementById('input-admin-secret');
-          if (inp.type === 'password') {
-            inp.type = 'text';
-            btnToggleSecret.textContent = '🙈';
-          } else {
-            inp.type = 'password';
-            btnToggleSecret.textContent = '👁';
-          }
+      const btnSyncNow = document.getElementById('btn-sync-now');
+      if (btnSyncNow) {
+        btnSyncNow.addEventListener('click', async () => {
+          showToast('Syncing telemetry via proxy...');
+          const ok = await fetchLiveTelemetry();
+          if (ok) showToast('Telemetry synced');
         });
       }
 
-      document.getElementById('btn-connect-live').addEventListener('click', async () => {
-        const url = document.getElementById('input-live-url').value.trim();
-        const secret = document.getElementById('input-admin-secret').value.trim();
-        const pollMs = Number(document.getElementById('select-poll-ms').value) || 3000;
-        if (!url || !secret) {
-          showToast('Enter both Backend URL and Admin Secret', 'warn');
-          return;
-        }
-        state.liveConfig.baseUrl = url;
-        state.liveConfig.secret = secret;
-        state.liveConfig.pollMs = pollMs;
-        try {
-          localStorage.setItem('axiom_ops_url', url);
-          localStorage.setItem('axiom_ops_secret', secret);
-          localStorage.setItem('axiom_ops_poll', String(pollMs));
-          sessionStorage.setItem('axiom_ops_url', url);
-          sessionStorage.setItem('axiom_ops_secret', secret);
-          sessionStorage.setItem('axiom_ops_poll', String(pollMs));
-        } catch {}
-        state.mode = 'live';
-        state.live = true;
-        updateConnUi();
-        startLoop();
-        const ok = await fetchLiveTelemetry();
-        if (ok) {
-          pushAudit(`Connected live to ${url} (${pollMs / 1000}s polling)`);
-          modal.classList.add('hidden');
-          showToast('Connected to live Render telemetry');
-        }
-      });
-
-      document.getElementById('btn-disconnect-live').addEventListener('click', () => {
-        state.mode = 'sim';
-        try {
-          localStorage.removeItem('axiom_ops_secret');
-          sessionStorage.removeItem('axiom_ops_secret');
-        } catch {}
-        const keyIndicator = document.getElementById('saved-key-indicator');
-        if (keyIndicator) keyIndicator.classList.add('hidden');
-        updateConnUi();
-        startLoop();
-        pushAudit('Disconnected from live backend; resumed simulation mode.');
-        showToast('Switched back to simulation mode');
-      });
-
-      // Hook live control sync onto toggles, sliders, and endpoint throttles
-      document.addEventListener('click', (e) => {
-        if (state.mode === 'live' && (e.target.closest('[data-toggle-control]') || e.target.closest('[data-throttle-ep]') || e.target.closest('#btn-reset-controls'))) {
-          pushLiveControls();
-        }
-      });
-      document.addEventListener('change', (e) => {
-        if (state.mode === 'live' && e.target.matches('[data-rate-key]')) {
-          pushLiveControls();
-        }
-      });
+      const selectPoll = document.getElementById('select-poll-ms');
+      if (selectPoll) {
+        selectPoll.addEventListener('change', (e) => {
+          const val = Number(e.target.value) || 3000;
+          state.liveConfig.pollMs = val;
+          startLoop();
+          showToast(`Poll interval set to ${val / 1000}s`);
+        });
+      }
 
       // Boot
       initCharts();
       updateConnUi();
       renderAll();
+
       let timerId = null;
       function startLoop() {
         if (timerId) clearInterval(timerId);
-        const interval = state.mode === 'live' ? state.liveConfig.pollMs : 2000;
+        const interval = state.liveConfig.pollMs || 3000;
         timerId = setInterval(() => {
           if (!state.live) return;
-          if (state.mode === 'live') {
-            fetchLiveTelemetry();
-          } else {
-            computeTick();
-            renderAll();
-          }
+          fetchLiveTelemetry();
         }, interval);
       }
       startLoop();
 
-      // Auto-connect on reload with saved secret across any domain (ops.axiom4.online, vercel.app, localhost)
+      // Security Cleanup: Purge any legacy client-side admin secrets from device storage
       try {
-        const savedUrl = localStorage.getItem('axiom_ops_url') || sessionStorage.getItem('axiom_ops_url');
-        const savedSecret = localStorage.getItem('axiom_ops_secret') || sessionStorage.getItem('axiom_ops_secret');
-        const savedPoll = Number(localStorage.getItem('axiom_ops_poll') || sessionStorage.getItem('axiom_ops_poll')) || 3000;
-        if (savedUrl) {
-          document.getElementById('input-live-url').value = savedUrl;
-          state.liveConfig.baseUrl = savedUrl;
-        }
-        if (savedPoll) {
-          document.getElementById('select-poll-ms').value = String(savedPoll);
-          state.liveConfig.pollMs = savedPoll;
-        }
-        if (savedSecret) {
-          state.liveConfig.secret = savedSecret;
-          document.getElementById('input-admin-secret').value = savedSecret;
-          state.mode = 'live';
-          state.live = true;
-          updateConnUi();
-          startLoop();
-          fetchLiveTelemetry();
-        }
+        localStorage.removeItem('axiom_ops_secret');
+        sessionStorage.removeItem('axiom_ops_secret');
       } catch {}
+
+      // Initial telemetry fetch
+      fetchLiveTelemetry();
     })();
   </script>
 </body>

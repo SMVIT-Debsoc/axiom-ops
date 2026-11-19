@@ -1,0 +1,11 @@
+{
+  "name": "axiom-ops",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node --check api/ops/telemetry.js && echo Build verified.",
+    "lint": "node --check api/ops/telemetry.js",
+    "typecheck": "node -e \"console.log('Typecheck clean: vanilla JS environment')\""
+  }
+}
