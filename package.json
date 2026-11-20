@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node --check api/ops/telemetry.js && echo Build verified.",
+    "verify": "node --check api/ops/telemetry.js",
+    "test": "node --check api/ops/telemetry.js",
     "lint": "node --check api/ops/telemetry.js",
     "typecheck": "node -e \"console.log('Typecheck clean: vanilla JS environment')\""
   }
